@@ -1,0 +1,26 @@
+{
+  "name": "lapiete_server",
+  "version": "1.0.0",
+  "description": "> This is vanilla Node.js CRUD API lapiete project.",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev" : "nodemon server.js",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tarikmsr/lapiete_server.git"
+  },
+  "author": "Tarik",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tarikmsr/lapiete_server/issues"
+  },
+  "homepage": "https://github.com/tarikmsr/lapiete_server#readme",
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "express": "^4.18.2",
+    "mariadb": "^3.1.1"
+  }
+}
