@@ -2,6 +2,7 @@ const requestToJsonparser = require("../util/body-parser");
 const { pool } = require('../methods/connection');
 
 let lastId = 1;
+let result;
 
 function generateAutoIncrementId() {
   lastId++;
@@ -18,12 +19,15 @@ module.exports = async (req, res) => {
       res.writeHead(201, { "Content-Type": "application/json" });
       res.end();
     } catch (err) {
-      console.log(err);
+      console.log("res -- 22");
+      console.log(result.error);
+
       res.writeHead(400, { "Content-Type": "application/json" });
+
       res.end(
         JSON.stringify({
           title: "Validation Failed",
-          message: "Request jsonData is not valid",
+          message: `${result.error}`,
         })
       );
     }
@@ -38,7 +42,6 @@ module.exports = async (req, res) => {
 async function insertNewDefunt(jsonData){
 
   const keysArray = Object.keys(jsonData);
-  let result;
   let conn;
 
   try {
@@ -50,13 +53,16 @@ async function insertNewDefunt(jsonData){
     let values = [];
     for (let i = 0; i < keys.length; i++) {
 
+
       query += `${keys[i]}, `;
 
       //what if decisionaire //same number 
-      //if(i==0 && tableName == 'defunt'){
-      //values.puch(generateAutoIncrementId())
-    // }else{  }
+      if(i == 0 && keys[i] == 'numeroDefunt'){
+      values.puch(generateAutoIncrementId())
+    }else{ 
       values.push(table[keys[i]]);
+     }
+
     }
     query = query.slice(0, -2) + ") VALUES (";
     for (let i = 0; i < keys.length; i++) {
@@ -68,6 +74,8 @@ async function insertNewDefunt(jsonData){
          result = await conn.query(query,values);
         // console.log(result); //OkPacket { affectedRows: 1, insertId: 0n, warningStatus: 1 } //succes
         } catch (err) {
+          console.log("err.text : ");
+          console.log(err.text);
           console.error(err);
           throw err;
         } finally {
@@ -76,13 +84,13 @@ async function insertNewDefunt(jsonData){
 
       })();
   }
-   return result;
 
+  console.log("result--");
+  console.log(result);
+
+   return result;
  } catch (err) {
    console.error(err);
    result.status(500).send('Error retrieving users from database');
  }
 };
-
-
-

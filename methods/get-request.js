@@ -1,10 +1,10 @@
 const { pool } = require('../methods/connection');
-const requestBodyparser = require("../util/body-parser");
+// const requestToJsonparser = require("../util/body-parser");
 
 const tablesName =[
   'defunt',
   'decisionnaire',
-  'affiliation',
+  'filiation',
   'deces',
   'mise_en_biere',
   'situation_familiale',
@@ -12,6 +12,8 @@ const tablesName =[
   'concession',
   'rapatriement',
   'vol',
+  'documents',
+
 ];
 
 module.exports = async (req, res) => {
@@ -20,18 +22,16 @@ module.exports = async (req, res) => {
   
   const regexNumbers = /^[0-9]+$/;
 
-  const regexV4 = new RegExp(
-  /^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i
-  );
-
+  // const regexV4 = new RegExp(
+  // /^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i
+  // );
 
 
   if (req.url === "/api/form") {
-    res.statusCode = 200;
-    res.setHeader("Content-Type", "application/json");
-    //get all
-    res.write(await getAllDefuntsData());
-    res.end();
+
+    let jsonResult = JSON.stringify(await getAllDefuntsData());
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(jsonResult);
 
   } else if (!regexNumbers.test(id)) {
     res.writeHead(400, { "Content-Type": "application/json" });
@@ -44,7 +44,7 @@ module.exports = async (req, res) => {
   } else if (baseUrl === "/api/form/" && regexNumbers.test(id)) {
     res.setHeader("Content-Type", "application/json");
     //get one by ID
-    var result = await getDefuntData(id);
+    var result = await getOneDefuntById(id);
     if (result != null) {
       res.statusCode = 200;
       res.write(JSON.stringify(result));
@@ -53,7 +53,9 @@ module.exports = async (req, res) => {
     } else {
       res.statusCode = 404;
       res.write(
-        JSON.stringify({ title: "Not Found", message: "data not found" })
+        JSON.stringify({ 
+          title: "Not Found", 
+          message: "data not found" })
       );
       res.end();
     }
@@ -67,15 +69,19 @@ module.exports = async (req, res) => {
 
 async function getAllDefuntsData(){
   try {
-    const data = {};
+    const data = {};//[{}] //depands on the rows.length 
     const conn = await pool.getConnection();
 
     for (let i = 0; i < tablesName.length; i++) {
       const table = tablesName[i];
       const query = `SELECT * FROM ${table}`;
       const rows = await conn.query(query);
-      data[table] = rows[0];
+      console.log("rows-------")
+      // console.log(rows)
+
+      data[table] = rows[0]; //only the first one
     }
+
     conn.release();
     return data;
 
@@ -86,7 +92,7 @@ async function getAllDefuntsData(){
 }
 
 
-async function getDefuntData(numeroDefunt){
+async function getOneDefuntById(numeroDefunt){
   try {
     const data = {};
     const conn = await pool.getConnection();
