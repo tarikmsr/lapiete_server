@@ -1,8 +1,12 @@
 const requestBodyparser = require("../util/body-parser");
-const writeToFile = require("../util/write-to-file");
 const { pool } = require('../methods/connection');
 
-const fs = require('fs');
+const postReq = require("../methods/post-request");
+
+
+// const writeToFile = require("../util/write-to-file");
+// const fs = require('fs');
+let result;
 
 
 module.exports = async (req, res) => {
@@ -25,38 +29,22 @@ module.exports = async (req, res) => {
     );
   } else if (baseUrl === "/api/form/" && regexNumbers.test(id)) {
     try {
-      let body = await requestBodyparser(req);
-      //TODO ://update
-      res.write(await insertOrUpdateIntoDefunt(body));
+      let body = await requestBodyparser(req);  
+
+      console.log("start 30")
+      res.write(await updateIntoDefunt(body));
+      console.log("end 30")
+
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(); //JSON.stringify(body)
+      res.end(); //
 
-
-      // const index = req.form.findIndex((data) => {
-      //   return data.id === id;
-      // });
-      // if (index === -1) {
-      //   res.statusCode = 404;
-      //   res.write(
-      //     JSON.stringify({ title: "Not Found", message: "Data not found" })
-      //   );
-      //   res.end();
-      // } else {
-
-      //   req.form[index] = { id, ...body };
-      //   //call data base here
-
-      //   writeToFile(req.form);
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end();
-      // }
     } catch (err) {
       console.log(err);
       res.writeHead(400, { "Content-Type": "application/json" });
       res.end(
         JSON.stringify({
           title: "Validation Failed",
-          message: "Request body is not valid",
+          message: "Request Json is not valid : "+err,
         })
       );
     }
@@ -70,68 +58,65 @@ module.exports = async (req, res) => {
 
 
 
-
-async function insertOrUpdateIntoDefunt(jsonData) {
-  const keysArray = Object.keys(jsonData);
-  let result;
+async function updateIntoDefunt(jsonData) {
   let conn;
+  const keysJson = Object.keys(jsonData);
 
-  //not working
   try {
     conn = await pool.getConnection();
-    for (let tableName of keysArray) {
-      let table = jsonData[tableName];
-      const keys = Object.keys(table);
 
-      if (tableName === 'defunt') {
-        const numerodefunt = table.numerodefunt;
-        const existingDefunt = await conn.query(
-          `SELECT * FROM defunt WHERE numerodefunt = ?`,
-          [numerodefunt]
+
+      for (let tableName of keysJson) {
+
+        let table = jsonData[tableName];
+        const keysTable = Object.keys(table);
+
+        const isExistTableInDB = await conn.query(
+          "SELECT * FROM "+tableName+" WHERE numerodefunt = ?",
+          table['numeroDefunt']
         );
-        if (existingDefunt.length > 0) {
-          let updateQuery = `UPDATE defunt SET `;
+
+        console.log("numeroDefunt")
+
+        console.log(table['numeroDefunt'])
+        console.log("isExistTableInDB")
+        console.log(""+isExistTableInDB+"")
+
+
+        if (isExistTableInDB.length > 0) {
+          let updateQuery = "UPDATE "+tableName+" SET ";  
           let values = [];
-          for (let i = 0; i < keys.length; i++) {
-            updateQuery += `${keys[i]} = ?, `;
-            values.push(table[keys[i]]);
+          for (let i = 1; i < keysTable.length; i++) { //i=1 //without numerodefunt
+            updateQuery += `${keysTable[i]} = ?, `;
+            values.push(table[keysTable[i]]);
           }
-          updateQuery = updateQuery.slice(0, -2) + ` WHERE numerodefunt = ?`;
-          values.push(numerodefunt);
+          updateQuery = updateQuery.slice(0, -2) + " WHERE numerodefunt = "+table['numeroDefunt'];         
           result = await conn.query(updateQuery, values);
+
         } else {
-          let query = `INSERT INTO defunt (numerodefunt, `;
-          let values = [numerodefunt];
-          for (let i = 1; i < keys.length; i++) {
-            query += `${keys[i]}, `;
-            values.push(table[keys[i]]);
+
+          let query = "INSERT INTO "+tableName+" ( numeroDefunt,"; //numeroDefunt, but what if the id n'exist pas //need to create defubnt first
+          let values = [table['numeroDefunt']]; //[];
+          for (let i = 1; i < keysTable.length; i++) {
+            query += `${keysTable[i]}, `;
+            values.push(table[keysTable[i]]);
           }
           query = query.slice(0, -2) + `) VALUES (?, `;
-          for (let i = 1; i < keys.length; i++) {
+          for (let i = 1; i < keysTable.length-1; i++) { //-1 because of numeroDefunt
             query += `?, `;
           }
           query = query.slice(0, -2) + `)`;
+
           result = await conn.query(query, values);
+          
         }
-      } else {
-        let query = `INSERT INTO ${tableName} (`;
-        let values = [];
-        for (let i = 0; i < keys.length; i++) {
-          query += `${keys[i]}, `;
-          values.push(table[keys[i]]);
-        }
-        query = query.slice(0, -2) + `) VALUES (`;
-        for (let i = 0; i < keys.length; i++) {
-          query += `?, `;
-        }
-        query = query.slice(0, -2) + `)`;
-        result = await conn.query(query, values);
       }
-    }
-    return result;
+
+
   } catch (err) {
+    if (conn) await conn.rollback();
     console.error(err);
-    result.status(500).send('Error retrieving users from database');
+    throw err;
   } finally {
     if (conn) conn.release();
   }

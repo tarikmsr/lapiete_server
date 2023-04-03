@@ -67,31 +67,56 @@ module.exports = async (req, res) => {
 };
 
 
-async function getAllDefuntsData(){
-  try {
-    const data = {};//[{}] //depands on the rows.length 
-    const conn = await pool.getConnection();
+function getAllDefuntsData() {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = []; // array to store the separate data objects
+      const conn = await pool.getConnection();
 
-    for (let i = 0; i < tablesName.length; i++) {
-      const table = tablesName[i];
-      const query = `SELECT * FROM ${table}`;
-      const rows = await conn.query(query);
-      console.log("rows-------")
-      // console.log(rows)
+      for (let i = 0; i < tablesName.length; i++) {
+        const table = tablesName[i];
+        const query = `SELECT * FROM ${table}`;
+        const rows = await conn.query(query);
 
-      data[table] = rows[0]; //only the first one
+        // data[table] = rows; 
+        //// store all rows for the table
+        ////change it to store all info in one json if table.numeroDefunt ==..
+
+        for (let j = 0; j < rows.length; j++) {
+          const rowData = rows[j];
+          const dataObject = {
+            [table]: rowData
+          };
+          const existingDataIndex = data.findIndex(obj => obj.defunt && obj.defunt.numeroDefunt === rowData.numeroDefunt);
+          if (existingDataIndex === -1) {
+            data.push(dataObject);
+          } else {
+            data[existingDataIndex][table] = rowData;
+          }
+        }
+
+      }
+
+      conn.release();
+      resolve(data);
+
+    } catch (err) {
+      console.error(err);
+      reject(new Error('Error retrieving data from database'));
     }
-
-    conn.release();
-    return data;
-
-  } catch (err) {
-    console.error(err);
-    throw new Error('Error retrieving data from database');
-  }
+  });
 }
 
 
+/**
+ * Retrieves a defunt and their associated data by their ID.
+ *
+ * @param {number} numeroDefunt - The ID of the defunt to retrieve.
+ * @returns {Promise<Object>} A Promise that resolves to an object containing the
+ * retrieved data, with keys for each table name and values for the corresponding
+ * row data.
+ * @throws {Error} If there is an error retrieving data from the database.
+ */
 async function getOneDefuntById(numeroDefunt){
   try {
     const data = {};
@@ -111,4 +136,3 @@ async function getOneDefuntById(numeroDefunt){
     throw new Error('Error retrieving data from database');
   }
 }
-

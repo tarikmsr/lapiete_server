@@ -1,8 +1,8 @@
 const requestToJsonparser = require("../util/body-parser");
 const { pool } = require('../methods/connection');
 
-let lastId = 1;
-let result;
+let lastId = 2; //start increment 
+let indexId = 0;
 
 function generateAutoIncrementId() {
   lastId++;
@@ -13,21 +13,25 @@ function generateAutoIncrementId() {
 module.exports = async (req, res) => {
   if (req.url === "/api/form") {
     try {
+      res.writeHead(201, { "Content-Type": "application/json" });
 
       let jsonData = await requestToJsonparser(req);
-      res.write(await insertNewDefunt(jsonData));
-      res.writeHead(201, { "Content-Type": "application/json" });
-      res.end();
-    } catch (err) {
-      console.log("res -- 22");
-      console.log(result.error);
-
-      res.writeHead(400, { "Content-Type": "application/json" });
+      let result = await insertNewDefunt(jsonData);
 
       res.end(
+          JSON.stringify({
+            title: "Insert new defunt with successful",
+            message: `${result}`, //!
+          })          
+      );
+
+    } catch (err) {
+      console.log(err)
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(
         JSON.stringify({
-          title: "Validation Failed",
-          message: `${result.error}`,
+          title: "Insert failed",
+          message: `${err.text}`,
         })
       );
     }
@@ -37,60 +41,66 @@ module.exports = async (req, res) => {
   }
 };
 
-
-
-async function insertNewDefunt(jsonData){
-
-  const keysArray = Object.keys(jsonData);
+async function insertNewDefunt(jsonData) {
   let conn;
-
   try {
-    conn = await pool.getConnection(); 
-    for (let tableName of keysArray) {
-    let table = jsonData[tableName];
-    const keys = Object.keys(table);
-    let query = "INSERT INTO "+tableName+" (";
-    let values = [];
-    for (let i = 0; i < keys.length; i++) {
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
 
+    // Insert into parent tables
+    for (let tableName in jsonData) {
+      if (!jsonData.hasOwnProperty(tableName)) continue;
 
-      query += `${keys[i]}, `;
+      let tableData = jsonData[tableName];
+      const tableKeys = Object.keys(tableData);
+      const primaryKey = tableKeys[0];
 
-      //what if decisionaire //same number 
-      if(i == 0 && keys[i] == 'numeroDefunt'){
-      values.puch(generateAutoIncrementId())
-    }else{ 
-      values.push(table[keys[i]]);
-     }
+      if (tableName === 'defunt') {
+        // Use auto-increment for the primary key in defunt table
+        indexId = parseInt(generateAutoIncrementId());
+        tableData[primaryKey] = indexId; 
 
-    }
-    query = query.slice(0, -2) + ") VALUES (";
-    for (let i = 0; i < keys.length; i++) {
-      query += "?, ";
-    }
-    query = query.slice(0, -2) + ")";
-      (async () => {
-        try { 
-         result = await conn.query(query,values);
-        // console.log(result); //OkPacket { affectedRows: 1, insertId: 0n, warningStatus: 1 } //succes
-        } catch (err) {
-          console.log("err.text : ");
-          console.log(err.text);
-          console.error(err);
-          throw err;
-        } finally {
-          if (conn) conn.release(); // release connection back to pool
-        }
+      let query = `INSERT INTO ${tableName} (${tableKeys.join(', ')})  VALUES (`;//?
+      for (let i = 0; i < tableKeys.length; i++) {
+        query += "?, ";
+      }
+      query = query.slice(0, -2) + ")";
+      const values = Object.values(tableData);
 
-      })();
+      await conn.query(query, values);
+    } //end if
   }
 
-  console.log("result--");
-  console.log(result);
 
-   return result;
- } catch (err) {
-   console.error(err);
-   result.status(500).send('Error retrieving users from database');
- }
-};
+    // Insert into child tables
+    for (let tableName in jsonData) {
+      if (!jsonData.hasOwnProperty(tableName)) continue;
+      if (tableName === 'defunt') continue;
+
+      let tableData     = jsonData[tableName];
+      if (tableName === 'decisionnaire') {
+        tableData['numeroDecisionnaire'] = indexId; //??
+      };
+      const tableKeys   = Object.keys(tableData);
+      const foreignKey  = Object.keys(tableData).find(key => key.includes('numeroDefunt'));
+      tableData[foreignKey] = indexId; //!
+
+      let query = `INSERT INTO ${tableName} (${Object.keys(tableData).join(', ')}) VALUES (`;
+      for (let i = 0; i < tableKeys.length; i++) {
+        query += "?, ";
+      }
+      query = query.slice(0, -2) + ")";
+      const values = Object.values(tableData);
+      
+      await conn.query(query, values);
+    }
+
+    await conn.commit();
+  } catch (err) {
+    if (conn) await conn.rollback();
+    console.error(err);
+    throw err;
+  } finally {
+    if (conn) conn.release();
+  }
+}
