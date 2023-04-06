@@ -1,7 +1,7 @@
 const requestToJsonparser = require("../util/body-parser");
 const { pool } = require('../methods/connection');
 
-let lastId = 2; //start increment 
+let lastId = 8; //start increment 
 let indexId = 0;
 
 function generateAutoIncrementId() {
@@ -16,7 +16,11 @@ module.exports = async (req, res) => {
       res.writeHead(201, { "Content-Type": "application/json" });
 
       let jsonData = await requestToJsonparser(req);
+      console.log("19")
       let result = await insertNewDefunt(jsonData);
+
+      console.log("result 19 : "+result)
+
 
       res.end(
           JSON.stringify({
@@ -41,11 +45,23 @@ module.exports = async (req, res) => {
   }
 };
 
+
+
 async function insertNewDefunt(jsonData) {
-  let conn;
+  return new Promise(async (resolve, reject) => {
+
   try {
-    conn = await pool.getConnection();
-    await conn.beginTransaction();
+    pool.connect((err) => {
+      if (err) throw err;
+      console.log('Connected to MySQL database! : ');
+    });
+
+    let res;
+
+    // let conn;
+    // conn = await pool.getConnection();
+    // await conn.beginTransaction();
+    
 
     // Insert into parent tables
     for (let tableName in jsonData) {
@@ -67,10 +83,22 @@ async function insertNewDefunt(jsonData) {
       query = query.slice(0, -2) + ")";
       const values = Object.values(tableData);
 
-      await conn.query(query, values);
-    } //end if
-  }
+      // await conn.query(query, values);
 
+      pool.query(query, values,(err, results, fields) => {
+        if (err) {
+          return pool.rollback(() => {
+            console.log("90 error : "+err)
+            throw err;
+          });
+        }
+        res = results.insertId;
+        console.log("insert defint with succesfull user id: "+ results.insertId)
+      });
+
+    } //end if
+  
+  }
 
     // Insert into child tables
     for (let tableName in jsonData) {
@@ -92,15 +120,46 @@ async function insertNewDefunt(jsonData) {
       query = query.slice(0, -2) + ")";
       const values = Object.values(tableData);
       
-      await conn.query(query, values);
+      // await conn.query(query, values);
+
+      pool.query(query, values,(err, results, fields) => {
+        if (err) {
+          return pool.rollback(() => {
+            throw err;
+          });
+        }        
+        res = results.insertId;
+        console.log("insert defint with succesfull : "+results.insertId)
+      });
+
     }
 
-    await conn.commit();
+    // await conn.commit();
+
+    pool.commit((err) => {
+      if (err) {
+        return pool.rollback(() => {
+          throw err;
+        });
+      }
+      resolve(res);
+      console.log('Transaction complete.');
+    });
+
+
   } catch (err) {
-    if (conn) await conn.rollback();
+    console.log("151 - catch error")
     console.error(err);
-    throw err;
+    reject(new Error('Error retrieving data from database : '+err));
   } finally {
-    if (conn) conn.release();
+    // if (conn) conn.release();
+
+    pool.end((err) => {
+      if (err) throw err;
+      console.log('Connection closed!');
+    });  
   }
+
+});
+
 }
