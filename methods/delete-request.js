@@ -23,34 +23,28 @@ module.exports = (req, res) => {
 
     try {
 
-    res.writeHead(200, { "Content-Type": "application/json" });
-    let result =  deleteDefunt(id); //await
+    deleteDefunt(id)
+    .then(result => {
 
-    res.end(
-      JSON.stringify({
-        title: "delete defunt with successful",
-        message: `${result}`, // affectedRows
-      })          
-  );
+      res.writeHead(200, { "Content-Type": "application/json" });
+      let jsonResult = JSON.stringify({
+        "title": "delete defunt with successful",
+        "message": result
+      });
+      res.end(jsonResult);
+    })
+    .catch(err => {
+      res.writeHead(401, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          title: "Can not delete defunt",
+          error: err.error['message'],
+        })
+      );
+    });
 
-    // const index = req.form.findIndex((data) => {
-    //   return data.id === id;
-    // });
-    // if (index === -1) {
-    //   res.statusCode = 404;
-    //   res.write(
-    //     JSON.stringify({ title: "Not Found", message: "Data not found" })
-    //   );
-    //   res.end();
-    // } else {
 
-    //   req.form.splice(index, 1);
-    //   writeToFile(req.form);
-    //   res.writeHead(204, { "Content-Type": "application/json" });
-    //   res.end(JSON.stringify(req.form));
-    // }
   } catch (err) {
-    console.log(err)
     res.writeHead(400, { "Content-Type": "application/json" });
     res.end(
       JSON.stringify({
@@ -68,54 +62,37 @@ module.exports = (req, res) => {
 
 
 async function deleteDefunt(id) {
-  const childTableNames = ['decisionnaire', 'filiation', 'deces', 'mise_en_biere', 'situation_familiale', 'cimetiere', 'concession', 'rapatriement', 'vol', 'documents'];
-  let conn;
+  return new Promise(async (resolve, reject) => {
+
+  const childTableNames = ['decisionnaire', 'filiation', 'deces', 'mise_en_biere', 'situation_familiale', 
+  'cimetiere', 'concession', 'rapatriement', 'vol', 'documents', 'generated_documents','uploaded_documents'];
+  let connection;
 
   try {
-    conn = await pool.getConnection();
+    connection = await pool.acquire();
 
     // Delete data from child tables
     for (let tableName of childTableNames) {
       const query = `DELETE FROM ${tableName} WHERE numerodefunt = ?`;
-      await conn.query(query, [id]);
+      const [result, fields] = await connection.execute(query,[id]);
+    
     }
 
     // Delete data from parent table
     const query = 'DELETE FROM defunt WHERE numerodefunt = ?';
-    const result = await conn.query(query, [id]);
-    return result.affectedRows;
+    const [result, fields] = await connection.execute(query,[id]);
+
+    resolve(result);
   } catch (err) {
-    console.log(err);
-    throw new Error('Error deleting data from database');
+    reject({
+      title:'Error retrieving data from database',
+      error: err
+    });  
   } finally {
-    if (conn) conn.release(); // release connection back to pool
+    if (connection) {
+      await pool.release(connection);
+    }
   }
-}
+});
 
-
-
-function deleteDefunt_old(id) {
-
-    return new Promise(async (resolve, reject) => {
-      const tableNames =['defunt','decisionnaire','filiation','deces','mise_en_biere','situation_familiale','cimetiere','concession','rapatriement','vol','documents'];
-      let conn;
-      let results = [];
-
-      try {
-      conn = await pool.getConnection();
-    
-      for (let tableName of tableNames) {
-        const query = `DELETE FROM ${tableName} WHERE numerodefunt = ?`;
-        const result = await conn.query(query, [id]);
-       results.push(result);
-      }
-      resolve(results[0]['affectedRows']);
-
-      } catch (err) {
-      console.log(err);
-      reject('Error retrieving data from database');
-      } finally {
-        if (conn) conn.release(); // release connection back to pool
-      }
-    });
 }

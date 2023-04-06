@@ -12,6 +12,9 @@ const tablesName =[
   'rapatriement',
   'vol',
   'documents',//doc
+  'generated_documents',
+  'uploaded_documents',
+
 ];
 
 module.exports = async (req, res) => {
@@ -37,12 +40,11 @@ module.exports = async (req, res) => {
     res.end(jsonResult);
   })
   .catch(err => {
-    console.log(err);
     res.writeHead(401, { "Content-Type": "application/json" });
     res.end(
       JSON.stringify({
-        title: "Validation Failed",
-        message: "UUID user is not valid",
+        title: "Cano not get user data",
+        error: err.err.error['message'],
       })
     );
   });
@@ -62,8 +64,8 @@ module.exports = async (req, res) => {
       res.writeHead(401, { "Content-Type": "application/json" });
       res.end(
         JSON.stringify({
-          title: "Validation Failed",
-          message: "UUID defunts are not found",
+          title: "Cano not get all defunt data",
+          error: err.error['message'],
         })
       );
     });
@@ -74,7 +76,7 @@ module.exports = async (req, res) => {
     res.end(
       JSON.stringify({
         title: "Validation Failed",
-        message: "UUID is not valid",
+        message: "UUID is not valid or route not found",
       })
     );
   } else if (baseUrl === "/api/form/" && regexNumbers.test(id)) {
@@ -89,8 +91,8 @@ module.exports = async (req, res) => {
       res.writeHead(401, { "Content-Type": "application/json" });
       res.end(
         JSON.stringify({
-          title: "Validation Failed",
-          message: "UUID defunt id is not found",
+          title: `Can not get defunt (numeroDefunt: ${id}) data `,
+          error: err.error['message'],
         })
       );
     });
@@ -104,25 +106,22 @@ module.exports = async (req, res) => {
 
 function getAllDefuntsData() {
   return new Promise(async (resolve, reject) => {
+    let connection;
     try {
       const data = []; 
-
-      pool.connect((err) => {
-        if (err) throw err;
-        console.log('Connected to MySQL database! : ');
-      });
+       connection = await pool.acquire();
 
       for (let i = 0; i < tablesName.length; i++) {
         const table = tablesName[i];
         const query = `SELECT * FROM ${table}`;
 
-        pool.query(query, (err, rows, fields) => {
-          if (err) throw err;
-  
+        const [rows, fields] = await connection.execute(query);
+
+        
         // data[table] = rows; 
         //// store all rows for the table
         ////change it to store all info in one json if table.numeroDefunt ==..
-
+  
         for (let j = 0; j < rows.length; j++) {
           let rowData = rows[j]; 
           let dataObject = { [table]: rowData};
@@ -136,22 +135,18 @@ function getAllDefuntsData() {
           if(i == tablesName.length - 1) {
             resolve(data);
           }
-        });
 
       } //end first for
-
-   
-
     } catch (err) {
-      console.error(err);
-      reject(new Error('Error retrieving data from database'));
-    }
-    finally {
-      pool.end((err) => {
-        if (err) throw err;
-        console.log('Connection closed!');
-      });  
+      reject({
+        title:'Error retrieving data from database',
+        error: err
+      });    
+    } finally {
+      if (connection) {
+        await pool.release(connection);
       }
+    }  
   });
 }
 
@@ -168,40 +163,34 @@ function getAllDefuntsData() {
 async function getOneDefuntById(numeroDefunt){
   return new Promise(async (resolve, reject) => {
 
+    let connection;
   try {
     let data = {};
-
-    pool.connect((err) => {
-      if (err) throw err;
-      console.log('Connected to MySQL database! : ');
-    });
+     connection = await pool.acquire();
 
     for (let i = 0; i < tablesName.length; i++) {
       const table = tablesName[i];
       const query = `SELECT * FROM ${table} WHERE numeroDefunt = ${numeroDefunt}`;
-      pool.query(query, (err, results, fields) => {
-        if (err) throw err;
-
-        data[table] = results != [] ? results[0] : {};
-        if(i == tablesName.length - 1) {
-          resolve(data);
-        }
-      });
-
+      const [rows, fields] = await connection.execute(query);
+      data[table] = rows != [] ? rows[0] : {};
+      if (i == tablesName.length - 1) {
+        resolve(data);
+      }
     } //end for
 
   } catch (err) {
-    console.error(err);
-    reject(new Error('Error retrieving data from database : '+err));
-  }    
-  finally {
-    pool.end((err) => {
-      if (err) throw err;
-      console.log('Connection closed!');
-    });  
-    }
-});
+    if (connection) await connection.rollback();
 
+    reject({
+      title:'Error retrieving data from database',
+      error: err
+    });
+  } finally {
+    if (connection) {
+      await pool.release(connection);
+    }
+  }
+  });
 }
 
 
@@ -216,43 +205,26 @@ async function getOneDefuntById(numeroDefunt){
 async function getUserData(id) {
   return new Promise(async (resolve, reject) => {
     try {
+
       const tableName = 'users';
       let query = `SELECT * FROM ${tableName} WHERE id=${id}`;
 
+      const connection = await pool.acquire();
+      try {
+        const [rows, fields] = await connection.execute(query);
+        resolve(rows[0]);
 
-      // const [rows, fields] = await pool.execute('SELECT * FROM users WHERE id = ?', [id]); 
-      const [results] = await pool.promise().query(query);
-
-      console.log("result")
-      console.log(results) 
-                              
-      resolve(results[0]);
-
-
-
-
-      // pool.query(query, (err, results, fields) => {
-      //   if (err) {
-      //     reject(new Error(`Error executing query: ${err.message}`));
-      //   } else {
-      //     resolve(results[0]);
-      //   }
-      // });
-
-
+      } finally {
+        if (connection) {
+          await pool.release(connection);
+        }
+      }
 
     } catch (err) {
-      console.error(err);
-      reject(Error(`Error retrieving data from database: ${err.message}`));
+      reject({
+        title:'Error retrieving data from database',
+        error: err
+      });
     }
   })
-    .finally(() => {
-      pool.end((err) => {
-        if (err) {
-          console.error(`Error closing connection: ${err.message}`);
-        } else {
-          console.log('Connection closed!');
-        }
-      });
-    });
 }

@@ -13,21 +13,31 @@ function generateAutoIncrementId() {
 module.exports = async (req, res) => {
   if (req.url === "/api/form") {
     try {
+
+
       res.writeHead(201, { "Content-Type": "application/json" });
 
       let jsonData = await requestToJsonparser(req);
-      console.log("19")
-      let result = await insertNewDefunt(jsonData);
 
-      console.log("result 19 : "+result)
-
-
-      res.end(
+      await insertNewDefunt(jsonData)
+      .then(result => {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        let jsonResult = JSON.stringify({
+          "title": "insert defunt with successful",
+          "message": result
+        });
+        res.end(jsonResult);
+      })
+      .catch(err => {
+        res.writeHead(401, { "Content-Type": "application/json" });
+        res.end(
           JSON.stringify({
-            title: "Insert new defunt with successful",
-            message: `${result}`, //!
-          })          
-      );
+            title: "Can not insert this defunt",
+            error: err.error['message'],
+          })                 
+        );
+      });
+
 
     } catch (err) {
       console.log(err)
@@ -49,20 +59,11 @@ module.exports = async (req, res) => {
 
 async function insertNewDefunt(jsonData) {
   return new Promise(async (resolve, reject) => {
-
-  try {
-    pool.connect((err) => {
-      if (err) throw err;
-      console.log('Connected to MySQL database! : ');
-    });
-
-    let res;
-
-    // let conn;
-    // conn = await pool.getConnection();
-    // await conn.beginTransaction();
     
-
+    let connection;
+    let res = [];    
+    try {
+    connection = await pool.acquire();
     // Insert into parent tables
     for (let tableName in jsonData) {
       if (!jsonData.hasOwnProperty(tableName)) continue;
@@ -82,20 +83,16 @@ async function insertNewDefunt(jsonData) {
       }
       query = query.slice(0, -2) + ")";
       const values = Object.values(tableData);
-
-      // await conn.query(query, values);
-
-      pool.query(query, values,(err, results, fields) => {
-        if (err) {
-          return pool.rollback(() => {
-            console.log("90 error : "+err)
-            throw err;
-          });
-        }
-        res = results.insertId;
-        console.log("insert defint with succesfull user id: "+ results.insertId)
-      });
-
+      try {
+        const [result, fields] = await connection.execute(query,values);
+        res[0] = result;
+      }catch(err){
+        if (connection) await connection.rollback();
+        reject({
+          title:'Error retrieving data from database',
+          error: err
+        });
+      }
     } //end if
   
   }
@@ -120,25 +117,29 @@ async function insertNewDefunt(jsonData) {
       query = query.slice(0, -2) + ")";
       const values = Object.values(tableData);
       
-      // await conn.query(query, values);
+      try {
+        const [result, fields] = await connection.execute(query,values);
+        res[1] = result;
+      }catch(err){
+        
+        console.log("error post 132");
+        console.log(err);
+    
+        if (connection) await connection.rollback();
 
-      pool.query(query, values,(err, results, fields) => {
-        if (err) {
-          return pool.rollback(() => {
-            throw err;
-          });
-        }        
-        res = results.insertId;
-        console.log("insert defint with succesfull : "+results.insertId)
-      });
-
+        reject({
+          title:'Error retrieving data from database',
+          error: err
+        });
+      }
+      resolve(res[1]);
     }
 
-    // await conn.commit();
+    connection.commit((err) => {
+      console.log("entry commit ");
 
-    pool.commit((err) => {
       if (err) {
-        return pool.rollback(() => {
+        return connection.rollback(() => {
           throw err;
         });
       }
@@ -148,16 +149,19 @@ async function insertNewDefunt(jsonData) {
 
 
   } catch (err) {
-    console.log("151 - catch error")
-    console.error(err);
-    reject(new Error('Error retrieving data from database : '+err));
-  } finally {
-    // if (conn) conn.release();
+    console.log("error post 160");
+    console.log(err);
 
-    pool.end((err) => {
-      if (err) throw err;
-      console.log('Connection closed!');
-    });  
+    if (connection) await connection.rollback();
+
+    reject({
+      title:'Error retrieving data from database',
+      error: err
+    });
+  } finally {
+    if (connection) {
+      await pool.release(connection);
+    }
   }
 
 });
