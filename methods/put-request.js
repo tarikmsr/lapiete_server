@@ -29,14 +29,27 @@ module.exports = async (req, res) => {
     );
   } else if (baseUrl === "/api/form/" && regexNumbers.test(id)) {
     try {
-      let body = await requestBodyparser(req);  
+      let jsonData = await requestBodyparser(req);  
+      
+      await updateIntoDefunt(jsonData,id)
+      .then(result => {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        let jsonResult = JSON.stringify({
+          "title": "Update defunt with successful",
+          "message": result
+        });
+        res.end(jsonResult);
+      })
+      .catch(err => {
+        res.writeHead(401, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            title: "Can not Update this defunt",
+            error: err.error['message']['info'],
+          })                 
+        );
+      });
 
-      console.log("start 30")
-      res.write(await updateIntoDefunt(body));
-      console.log("end 30")
-
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(); //
 
     } catch (err) {
       console.log(err);
@@ -58,66 +71,95 @@ module.exports = async (req, res) => {
 
 
 
-async function updateIntoDefunt(jsonData) {
-  let conn;
-  const keysJson = Object.keys(jsonData);
+async function updateIntoDefunt(jsonData,id) {
+  return new Promise(async (resolve, reject) => {
+    
+  let connection;
+  const tablesNames = Object.keys(jsonData);
 
   try {
-    conn = await pool.getConnection();
+    
+    connection = await pool.acquire();
 
-
-      for (let tableName of keysJson) {
+      for (let tableName of tablesNames) {
 
         let table = jsonData[tableName];
-        const keysTable = Object.keys(table);
+        const tableFiels = Object.keys(table);
+        
+        let query1 = "SELECT * FROM "+tableName+" WHERE numerodefunt = ?";
+        let values1 =  [id];
 
-        const isExistTableInDB = await conn.query(
-          "SELECT * FROM "+tableName+" WHERE numerodefunt = ?",
-          table['numeroDefunt']
-        );
+        let isExistTableInDB;
+        try {
+          const [rows, fields] = await connection.execute(query1,values1);
+           isExistTableInDB = rows;
 
-        console.log("numeroDefunt")
-
-        console.log(table['numeroDefunt'])
-        console.log("isExistTableInDB")
-        console.log(""+isExistTableInDB+"")
-
+        }catch(err){
+          console.log(err);
+          if (connection) await connection.rollback();
+          reject({
+            title:'Error retrieving data from database',
+            error: err
+          });
+        }
 
         if (isExistTableInDB.length > 0) {
           let updateQuery = "UPDATE "+tableName+" SET ";  
           let values = [];
-          for (let i = 1; i < keysTable.length; i++) { //i=1 //without numerodefunt
-            updateQuery += `${keysTable[i]} = ?, `;
-            values.push(table[keysTable[i]]);
+          for (let i = 1; i < tableFiels.length; i++) { //i=1 //without numerodefunt --1 test
+            updateQuery += `${tableFiels[i]} = ?, `;
+            values.push(table[tableFiels[i]]);
           }
-          updateQuery = updateQuery.slice(0, -2) + " WHERE numerodefunt = "+table['numeroDefunt'];         
-          result = await conn.query(updateQuery, values);
+
+          updateQuery = updateQuery.slice(0, -2) + " WHERE numerodefunt = "+id;   
+          console.log("118 + updateQuery "+ tableFiels.length)
+
+          console.log("118 + updateQuery "+ tableFiels.length)
+
+          values.push(table);
+
+          console.log("118 + updateQuery "+ tableFiels.length)
+          console.log(updateQuery)
+
+         console.log("117 + values "+ values.length)
+         console.log(values)
+
+
+          const [rows, fields] = await connection.execute(updateQuery,values);
+          result = rows;
+          resolve(result);
 
         } else {
 
           let query = "INSERT INTO "+tableName+" ( numeroDefunt,"; //numeroDefunt, but what if the id n'exist pas //need to create defubnt first
-          let values = [table['numeroDefunt']]; //[];
-          for (let i = 1; i < keysTable.length; i++) {
-            query += `${keysTable[i]}, `;
-            values.push(table[keysTable[i]]);
+          let values = [id]; //[];
+          for (let i = 1; i < tableFiels.length; i++) {
+            query += `${tableFiels[i]}, `;
+            values.push(table[tableFiels[i]]);
           }
           query = query.slice(0, -2) + `) VALUES (?, `;
-          for (let i = 1; i < keysTable.length-1; i++) { //-1 because of numeroDefunt
+          for (let i = 1; i < tableFiels.length-1; i++) { //-1 because of numeroDefunt
             query += `?, `;
           }
           query = query.slice(0, -2) + `)`;
-
-          result = await conn.query(query, values);
-          
+          const [rows, fields] = await connection.execute(query,values);
+          const result = rows; 
+          resolve(result);
         }
       }
 
 
   } catch (err) {
-    if (conn) await conn.rollback();
-    console.error(err);
-    throw err;
+    if (connection) await connection.rollback();
+    reject({
+      title:'Error retrieving data from database',
+      error: err
+    });
   } finally {
-    if (conn) conn.release();
+    if (connection) {
+      await pool.release(connection);
+    }
   }
+  
+  });
 }

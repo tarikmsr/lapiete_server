@@ -1,5 +1,4 @@
 const { pool } = require('../methods/connection');
-// const requestToJsonparser = require("../util/body-parser");
 
 const tablesName =[
   'defunt',
@@ -12,7 +11,9 @@ const tablesName =[
   'concession',
   'rapatriement',
   'vol',
-  'documents',
+  'documents',//doc
+  'generated_documents',
+  'uploaded_documents',
 
 ];
 
@@ -27,38 +28,74 @@ module.exports = async (req, res) => {
   // );
 
 
+  if (req.url === "/api/user" ) {  //&& regexNumbers.test(id)
+ 
+    const id = 1;
+    //email +password ?    
+
+    await getUserData(id)
+  .then(data => {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    let jsonResult = JSON.stringify(data);
+    res.end(jsonResult);
+  })
+  .catch(err => {
+    res.writeHead(401, { "Content-Type": "application/json" });
+    res.end(
+      JSON.stringify({
+        title: "Cano not get user data",
+        error: err.err.error['message'],
+      })
+    );
+  });
+  
+  
+
+  } else
   if (req.url === "/api/form") {
 
-    let jsonResult = JSON.stringify(await getAllDefuntsData());
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(jsonResult);
+    await getAllDefuntsData()
+    .then(data => {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      let jsonResult = JSON.stringify(data);
+      res.end(jsonResult);
+    })
+    .catch(err => {
+      res.writeHead(401, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          title: "Cano not get all defunt data",
+          error: err.error['message'],
+        })
+      );
+    });
+
 
   } else if (!regexNumbers.test(id)) {
     res.writeHead(400, { "Content-Type": "application/json" });
     res.end(
       JSON.stringify({
         title: "Validation Failed",
-        message: "UUID is not valid",
+        message: "UUID is not valid or route not found",
       })
     );
   } else if (baseUrl === "/api/form/" && regexNumbers.test(id)) {
-    res.setHeader("Content-Type", "application/json");
-    //get one by ID
-    var result = await getOneDefuntById(id);
-    if (result != null) {
-      res.statusCode = 200;
-      res.write(JSON.stringify(result));
-      res.end();
-     
-    } else {
-      res.statusCode = 404;
-      res.write(
-        JSON.stringify({ 
-          title: "Not Found", 
-          message: "data not found" })
+
+    await getOneDefuntById(id)
+    .then(data => {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      let jsonResult = JSON.stringify(data);
+      res.end(jsonResult);
+    })
+    .catch(err => {
+      res.writeHead(401, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          title: `Can not get defunt (numeroDefunt: ${id}) data `,
+          error: err.error['message'],
+        })
       );
-      res.end();
-    }
+    });
 
   } else {
     res.writeHead(404, { "Content-Type": "application/json" });
@@ -69,41 +106,47 @@ module.exports = async (req, res) => {
 
 function getAllDefuntsData() {
   return new Promise(async (resolve, reject) => {
+    let connection;
     try {
-      const data = []; // array to store the separate data objects
-      const conn = await pool.getConnection();
+      const data = []; 
+       connection = await pool.acquire();
 
       for (let i = 0; i < tablesName.length; i++) {
         const table = tablesName[i];
         const query = `SELECT * FROM ${table}`;
-        const rows = await conn.query(query);
 
+        const [rows, fields] = await connection.execute(query);
+
+        
         // data[table] = rows; 
         //// store all rows for the table
         ////change it to store all info in one json if table.numeroDefunt ==..
-
+  
         for (let j = 0; j < rows.length; j++) {
-          const rowData = rows[j];
-          const dataObject = {
-            [table]: rowData
-          };
+          let rowData = rows[j]; 
+          let dataObject = { [table]: rowData};
           const existingDataIndex = data.findIndex(obj => obj.defunt && obj.defunt.numeroDefunt === rowData.numeroDefunt);
           if (existingDataIndex === -1) {
             data.push(dataObject);
           } else {
-            data[existingDataIndex][table] = rowData;
+            data[existingDataIndex][table] = rowData; // != [] ?
           }
         }
+          if(i == tablesName.length - 1) {
+            resolve(data);
+          }
 
-      }
-
-      conn.release();
-      resolve(data);
-
+      } //end first for
     } catch (err) {
-      console.error(err);
-      reject(new Error('Error retrieving data from database'));
-    }
+      reject({
+        title:'Error retrieving data from database',
+        error: err
+      });    
+    } finally {
+      if (connection) {
+        await pool.release(connection);
+      }
+    }  
   });
 }
 
@@ -118,21 +161,70 @@ function getAllDefuntsData() {
  * @throws {Error} If there is an error retrieving data from the database.
  */
 async function getOneDefuntById(numeroDefunt){
+  return new Promise(async (resolve, reject) => {
+
+    let connection;
   try {
-    const data = {};
-    const conn = await pool.getConnection();
+    let data = {};
+     connection = await pool.acquire();
 
     for (let i = 0; i < tablesName.length; i++) {
       const table = tablesName[i];
       const query = `SELECT * FROM ${table} WHERE numeroDefunt = ${numeroDefunt}`;
-      const rows = await conn.query(query);
-      data[table] = rows[0];
-    }
-    conn.release();
-    return data;
+      const [rows, fields] = await connection.execute(query);
+      data[table] = rows != [] ? rows[0] : {};
+      if (i == tablesName.length - 1) {
+        resolve(data);
+      }
+    } //end for
 
   } catch (err) {
-    console.error(err);
-    throw new Error('Error retrieving data from database');
+    if (connection) await connection.rollback();
+
+    reject({
+      title:'Error retrieving data from database',
+      error: err
+    });
+  } finally {
+    if (connection) {
+      await pool.release(connection);
+    }
   }
+  });
+}
+
+
+
+/**
+* @param {number} id - The ID of the defunt to retrieve.
+* @returns {Promise<Object>} A Promise that resolves to an object containing the
+* retrieved data, with keys for each table name and values for the corresponding
+* row data.
+* @throws {Error} If there is an error retrieving data from the database.
+*/
+async function getUserData(id) {
+  return new Promise(async (resolve, reject) => {
+    try {
+
+      const tableName = 'users';
+      let query = `SELECT * FROM ${tableName} WHERE id=${id}`;
+
+      const connection = await pool.acquire();
+      try {
+        const [rows, fields] = await connection.execute(query);
+        resolve(rows[0]);
+
+      } finally {
+        if (connection) {
+          await pool.release(connection);
+        }
+      }
+
+    } catch (err) {
+      reject({
+        title:'Error retrieving data from database',
+        error: err
+      });
+    }
+  })
 }
