@@ -3,6 +3,7 @@ const getReq = require("./methods/get-request");
 const postReq = require("./methods/post-request");
 const putReq = require("./methods/put-request");
 const deleteReq = require("./methods/delete-request");
+require('dotenv').config();
 
 const PORT = process.env.PORT || 5001;
 

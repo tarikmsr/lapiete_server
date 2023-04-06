@@ -11,10 +11,6 @@ DELETE   /api/form/:id
 
 ```
 
-
-[![Tutorial](https://img.youtube.com/vi/4Z02Lgx4nS0/0.jpg)](https://www.youtube.com/watch?v=4Z02Lgx4nS0)
-
-
 ## Installation
 
 ```bash

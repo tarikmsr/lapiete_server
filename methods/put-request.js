@@ -106,15 +106,29 @@ async function updateIntoDefunt(jsonData,id) {
         if (isExistTableInDB.length > 0) {
           let updateQuery = "UPDATE "+tableName+" SET ";  
           let values = [];
-          for (let i = 1; i < tableFiels.length; i++) { //i=1 //without numerodefunt
+          for (let i = 1; i < tableFiels.length; i++) { //i=1 //without numerodefunt --1 test
             updateQuery += `${tableFiels[i]} = ?, `;
             values.push(table[tableFiels[i]]);
           }
-          updateQuery = updateQuery.slice(0, -2) + " WHERE numerodefunt = "+id;         
-          
+
+          updateQuery = updateQuery.slice(0, -2) + " WHERE numerodefunt = "+id;   
+          console.log("118 + updateQuery "+ tableFiels.length)
+
+          console.log("118 + updateQuery "+ tableFiels.length)
+
+          values.push(table);
+
+          console.log("118 + updateQuery "+ tableFiels.length)
+          console.log(updateQuery)
+
+         console.log("117 + values "+ values.length)
+         console.log(values)
+
+
           const [rows, fields] = await connection.execute(updateQuery,values);
           result = rows;
           resolve(result);
+
         } else {
 
           let query = "INSERT INTO "+tableName+" ( numeroDefunt,"; //numeroDefunt, but what if the id n'exist pas //need to create defubnt first
