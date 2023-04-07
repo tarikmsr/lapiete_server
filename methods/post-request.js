@@ -1,7 +1,7 @@
 const requestToJsonparser = require("../util/body-parser");
 const { pool } = require('../methods/connection');
 
-let lastId = 8; //start increment 
+let lastId = 16; //start increment 
 let indexId = 0;
 
 function generateAutoIncrementId() {
@@ -14,37 +14,37 @@ module.exports = async (req, res) => {
   if (req.url === "/api/form") {
     try {
 
-
-      res.writeHead(201, { "Content-Type": "application/json" });
-
       let jsonData = await requestToJsonparser(req);
 
       await insertNewDefunt(jsonData)
       .then(result => {
+        console.log("21");
         res.writeHead(200, { "Content-Type": "application/json" });
         let jsonResult = JSON.stringify({
-          "title": "insert defunt with successful",
+          "title": "insérsion du défunt avec succès",
           "message": result
         });
         res.end(jsonResult);
       })
       .catch(err => {
-        res.writeHead(401, { "Content-Type": "application/json" });
+        console.log("error")
+        console.log(err)
+
+        res.writeHead(404 , { "Content-Type": "application/json" });
         res.end(
           JSON.stringify({
-            title: "Can not insert this defunt",
-            error: err.error['message'],
+            title: "Impossible d'insérer ce défunt",
+            error: err,
           })                 
         );
       });
 
-
     } catch (err) {
       console.log(err)
-      res.writeHead(400, { "Content-Type": "application/json" });
+      res.writeHead(404, { "Content-Type": "application/json" });
       res.end(
         JSON.stringify({
-          title: "Insert failed",
+          title: "Échec de l'insertion",
           message: `${err.text}`,
         })
       );
@@ -54,8 +54,6 @@ module.exports = async (req, res) => {
     res.end(JSON.stringify({ title: "Not Found", message: "Route not found" }));
   }
 };
-
-
 
 async function insertNewDefunt(jsonData) {
   return new Promise(async (resolve, reject) => {
@@ -89,8 +87,8 @@ async function insertNewDefunt(jsonData) {
       }catch(err){
         if (connection) await connection.rollback();
         reject({
-          title:'Error retrieving data from database',
-          error: err
+          title:'Erreur lors de l\'insersion des données de la base de données',
+          error: err['sqlMessage']
         });
       }
     } //end if
@@ -121,15 +119,14 @@ async function insertNewDefunt(jsonData) {
         const [result, fields] = await connection.execute(query,values);
         res[1] = result;
       }catch(err){
-        
-        console.log("error post 132");
-        console.log(err);
+
+        // console.log(121)
+        // console.log(err['sqlMessage'])
     
         if (connection) await connection.rollback();
-
         reject({
-          title:'Error retrieving data from database',
-          error: err
+          title:'Erreur lors de l\'insersion des données de la base de données',
+          error: err['sqlMessage']
         });
       }
       resolve(res[1]);
@@ -155,8 +152,8 @@ async function insertNewDefunt(jsonData) {
     if (connection) await connection.rollback();
 
     reject({
-      title:'Error retrieving data from database',
-      error: err
+      title:'Erreur lors de l\'insersion des données de la base de données',
+      error: err['sqlMessage']
     });
   } finally {
     if (connection) {

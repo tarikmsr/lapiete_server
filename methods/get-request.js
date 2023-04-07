@@ -32,7 +32,6 @@ module.exports = async (req, res) => {
  
     const id = 1;
     //email +password ?    
-
     await getUserData(id)
   .then(data => {
     res.writeHead(200, { "Content-Type": "application/json" });
@@ -40,10 +39,10 @@ module.exports = async (req, res) => {
     res.end(jsonResult);
   })
   .catch(err => {
-    res.writeHead(401, { "Content-Type": "application/json" });
+    res.writeHead(400, { "Content-Type": "application/json" });
     res.end(
       JSON.stringify({
-        title: "Cano not get user data",
+        title: "Impossible d'obtenir les données de l'utilisateur",
         error: err.err.error['message'],
       })
     );
@@ -61,10 +60,10 @@ module.exports = async (req, res) => {
       res.end(jsonResult);
     })
     .catch(err => {
-      res.writeHead(401, { "Content-Type": "application/json" });
+      res.writeHead(400, { "Content-Type": "application/json" });
       res.end(
         JSON.stringify({
-          title: "Cano not get all defunt data",
+          title: "Impossible d'obtenir les données des utilisateurs",
           error: err.error['message'],
         })
       );
@@ -75,8 +74,8 @@ module.exports = async (req, res) => {
     res.writeHead(400, { "Content-Type": "application/json" });
     res.end(
       JSON.stringify({
-        title: "Validation Failed",
-        message: "UUID is not valid or route not found",
+        title: "Échec de la validation",
+        message: "L'UUID n'est pas valide ou l'itinéraire n'a pas été trouvé",
       })
     );
   } else if (baseUrl === "/api/form/" && regexNumbers.test(id)) {
@@ -88,10 +87,10 @@ module.exports = async (req, res) => {
       res.end(jsonResult);
     })
     .catch(err => {
-      res.writeHead(401, { "Content-Type": "application/json" });
+      res.writeHead(400, { "Content-Type": "application/json" });
       res.end(
         JSON.stringify({
-          title: `Can not get defunt (numeroDefunt: ${id}) data `,
+          title: `Impossible d'obtenir des données sur les défunts (numeroDefunt : ${id})`,
           error: err.error['message'],
         })
       );
@@ -139,7 +138,7 @@ function getAllDefuntsData() {
       } //end first for
     } catch (err) {
       reject({
-        title:'Error retrieving data from database',
+        title:'Erreur lors de la récupération des données de la base de données',
         error: err
       });    
     } finally {

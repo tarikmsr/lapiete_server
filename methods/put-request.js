@@ -1,10 +1,6 @@
 const requestBodyparser = require("../util/body-parser");
 const { pool } = require('../methods/connection');
 
-const postReq = require("../methods/post-request");
-
-
-// const writeToFile = require("../util/write-to-file");
 // const fs = require('fs');
 let result;
 
@@ -23,8 +19,8 @@ module.exports = async (req, res) => {
     res.writeHead(400, { "Content-Type": "application/json" });
     res.end(
       JSON.stringify({
-        title: "Validation Failed",
-        message: "UUID is not valid",
+        title: "Échec de la validation",
+        message: "L'UUID n'est pas valide",
       })
     );
   } else if (baseUrl === "/api/form/" && regexNumbers.test(id)) {
@@ -35,16 +31,16 @@ module.exports = async (req, res) => {
       .then(result => {
         res.writeHead(200, { "Content-Type": "application/json" });
         let jsonResult = JSON.stringify({
-          "title": "Update defunt with successful",
+          "title": "Mise à jour de defunt avec succès",
           "message": result
         });
         res.end(jsonResult);
       })
       .catch(err => {
-        res.writeHead(401, { "Content-Type": "application/json" });
+        res.writeHead(400, { "Content-Type": "application/json" });
         res.end(
           JSON.stringify({
-            title: "Can not Update this defunt",
+            title: "Impossible de mettre à jour ce defunt",
             error: err.error['message']['info'],
           })                 
         );
@@ -53,7 +49,7 @@ module.exports = async (req, res) => {
 
     } catch (err) {
       console.log(err);
-      res.writeHead(400, { "Content-Type": "application/json" });
+      res.writeHead(404, { "Content-Type": "application/json" });
       res.end(
         JSON.stringify({
           title: "Validation Failed",
@@ -66,10 +62,6 @@ module.exports = async (req, res) => {
     res.end(JSON.stringify({ title: "Not Found", message: "Route not found" }));
   }
 };
-
-
-
-
 
 async function updateIntoDefunt(jsonData,id) {
   return new Promise(async (resolve, reject) => {
@@ -112,22 +104,10 @@ async function updateIntoDefunt(jsonData,id) {
           }
 
           updateQuery = updateQuery.slice(0, -2) + " WHERE numerodefunt = "+id;   
-          console.log("118 + updateQuery "+ tableFiels.length)
-
-          console.log("118 + updateQuery "+ tableFiels.length)
-
-          values.push(table);
-
-          console.log("118 + updateQuery "+ tableFiels.length)
-          console.log(updateQuery)
-
-         console.log("117 + values "+ values.length)
-         console.log(values)
-
 
           const [rows, fields] = await connection.execute(updateQuery,values);
           result = rows;
-          resolve(result);
+          resolve(result); //status 200
 
         } else {
 
@@ -144,7 +124,7 @@ async function updateIntoDefunt(jsonData,id) {
           query = query.slice(0, -2) + `)`;
           const [rows, fields] = await connection.execute(query,values);
           const result = rows; 
-          resolve(result);
+          resolve(result); //add status 201
         }
       }
 
