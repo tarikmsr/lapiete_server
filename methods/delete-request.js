@@ -28,16 +28,16 @@ module.exports = (req, res) => {
 
       res.writeHead(200, { "Content-Type": "application/json" });
       let jsonResult = JSON.stringify({
-        "title": "delete defunt with successful",
+        "title": "Supprission du defunt avec succès",
         "message": result
       });
       res.end(jsonResult);
     })
     .catch(err => {
-      res.writeHead(401, { "Content-Type": "application/json" });
+      res.writeHead(400, { "Content-Type": "application/json" });
       res.end(
         JSON.stringify({
-          title: "Can not delete defunt",
+          title: "échec de la suppression du defunt",
           error: err.error['message'],
         })
       );
@@ -48,7 +48,7 @@ module.exports = (req, res) => {
     res.writeHead(400, { "Content-Type": "application/json" });
     res.end(
       JSON.stringify({
-        title: "delete failed",
+        title: "échec de la suppression",
         message: `${err.text}`,
       })
     );
