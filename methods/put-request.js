@@ -73,9 +73,15 @@ async function updateIntoDefunt(jsonData,id) {
     
     connection = await pool.acquire();
 
+    console.log("put 76----uploaded_documents")
+    console.log(jsonData['uploaded_documents'])
+    console.log("put 78- fin")
+
+
       for (let tableName of tablesNames) {
 
         let table = jsonData[tableName];
+
         const tableFiels = Object.keys(table);
         
         let query1 = "SELECT * FROM "+tableName+" WHERE numerodefunt = ?";

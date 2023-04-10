@@ -11,7 +11,7 @@ const tablesName =[
   'concession',
   'rapatriement',
   'vol',
-  'documents',//doc
+  'documents',//?
   'generated_documents',
   'uploaded_documents',
 

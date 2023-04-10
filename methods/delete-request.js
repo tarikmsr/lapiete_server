@@ -1,5 +1,12 @@
 const { pool } = require('../methods/connection');
 // const writeToFile = require("../util/write-to-file");
+
+
+const childTableNames = ['decisionnaire', 'filiation', 'deces', 'mise_en_biere', 'situation_familiale', 
+'cimetiere', 'concession', 'rapatriement', 'vol', 
+'documents', //?
+'generated_documents','uploaded_documents'];
+
 module.exports = (req, res) => {
   let baseUrl = req.url.substring(0, req.url.lastIndexOf("/") + 1);
   let id = req.url.split("/")[3];
@@ -64,8 +71,7 @@ module.exports = (req, res) => {
 async function deleteDefunt(id) {
   return new Promise(async (resolve, reject) => {
 
-  const childTableNames = ['decisionnaire', 'filiation', 'deces', 'mise_en_biere', 'situation_familiale', 
-  'cimetiere', 'concession', 'rapatriement', 'vol', 'documents', 'generated_documents','uploaded_documents'];
+
   let connection;
 
   try {

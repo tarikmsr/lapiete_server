@@ -1,8 +1,8 @@
 const requestToJsonparser = require("../util/body-parser");
 const { pool } = require('../methods/connection');
 
-let lastId = 16; //start increment 
-let indexId = 0;
+let lastId = 15; //start increment 
+let indexId = 1;
 
 function generateAutoIncrementId() {
   lastId++;
@@ -22,8 +22,9 @@ module.exports = async (req, res) => {
         res.writeHead(200, { "Content-Type": "application/json" });
         let jsonResult = JSON.stringify({
           "title": "insérsion du défunt avec succès",
-          "message": result
+          "id": indexId
         });
+        console.log(jsonResult)
         res.end(jsonResult);
       })
       .catch(err => {
@@ -61,12 +62,19 @@ async function insertNewDefunt(jsonData) {
     let connection;
     let res = [];    
     try {
+
+      console.log("post 66----uploaded_documents")
+      console.log(jsonData['uploaded_documents'])
+      console.log("post 68- fin")
+
     connection = await pool.acquire();
     // Insert into parent tables
     for (let tableName in jsonData) {
       if (!jsonData.hasOwnProperty(tableName)) continue;
 
       let tableData = jsonData[tableName];
+
+
       const tableKeys = Object.keys(tableData);
       const primaryKey = tableKeys[0];
 
@@ -83,8 +91,13 @@ async function insertNewDefunt(jsonData) {
       const values = Object.values(tableData);
       try {
         const [result, fields] = await connection.execute(query,values);
+        console.log("93 RESULT")
+        console.log(result)
+
         res[0] = result;
+
       }catch(err){
+        console.log(err);
         if (connection) await connection.rollback();
         reject({
           title:'Erreur lors de l\'insersion des données de la base de données',
@@ -117,6 +130,9 @@ async function insertNewDefunt(jsonData) {
       
       try {
         const [result, fields] = await connection.execute(query,values);
+        console.log("133 - post")
+        console.log(result)
+
         res[1] = result;
       }catch(err){
 
