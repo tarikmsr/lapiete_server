@@ -1,7 +1,9 @@
 const requestToJsonparser = require("../util/body-parser");
 const { pool } = require('../methods/connection');
+const pg =require('pg');
 
-let lastId = 15; //start increment 
+
+let lastId = 5; //start increment 
 let indexId = 1;
 
 function generateAutoIncrementId() {
@@ -91,9 +93,6 @@ async function insertNewDefunt(jsonData) {
       const values = Object.values(tableData);
       try {
         const [result, fields] = await connection.execute(query,values);
-        console.log("93 RESULT")
-        console.log(result)
-
         res[0] = result;
 
       }catch(err){
@@ -126,18 +125,29 @@ async function insertNewDefunt(jsonData) {
         query += "?, ";
       }
       query = query.slice(0, -2) + ")";
+
       const values = Object.values(tableData);
       
       try {
-        const [result, fields] = await connection.execute(query,values);
-        console.log("133 - post")
-        console.log(result)
+  
+        const stmt = await connection.prepare(query);
 
-        res[1] = result;
+        if (tableName === 'generated_documents' || tableName === 'uploaded_documents') {
+          for (let i = 1; i < values.length; i++) { // Start at index 1 to skip the first column
+            if (values[i]) { // Only set if value is not null
+              const byteValue = Buffer.from(values[i], 'base64');
+              values[i] = byteValue;
+            } 
+          }
+        } 
+      const [result, fields] = await stmt.execute(values);
+
+      res[1] = result;
+
       }catch(err){
 
-        // console.log(121)
-        // console.log(err['sqlMessage'])
+        console.log(121)
+        console.log(err)
     
         if (connection) await connection.rollback();
         reject({

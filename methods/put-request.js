@@ -1,6 +1,5 @@
 const requestBodyparser = require("../util/body-parser");
 const { pool } = require('../methods/connection');
-
 // const fs = require('fs');
 let result;
 
@@ -73,15 +72,16 @@ async function updateIntoDefunt(jsonData,id) {
     
     connection = await pool.acquire();
 
-    console.log("put 76----uploaded_documents")
-    console.log(jsonData['uploaded_documents'])
-    console.log("put 78- fin")
+    // console.log(jsonData)
+    // console.log("put 78- fin")
 
 
       for (let tableName of tablesNames) {
 
-        let table = jsonData[tableName];
+            // console.log("put 81 - tableName :",tableName)
 
+        let table = jsonData[tableName];
+        if(table != null){
         const tableFiels = Object.keys(table);
         
         let query1 = "SELECT * FROM "+tableName+" WHERE numerodefunt = ?";
@@ -91,6 +91,7 @@ async function updateIntoDefunt(jsonData,id) {
         try {
           const [rows, fields] = await connection.execute(query1,values1);
            isExistTableInDB = rows;
+
 
         }catch(err){
           console.log(err);
@@ -102,17 +103,42 @@ async function updateIntoDefunt(jsonData,id) {
         }
 
         if (isExistTableInDB.length > 0) {
+
           let updateQuery = "UPDATE "+tableName+" SET ";  
           let values = [];
-          for (let i = 1; i < tableFiels.length; i++) { //i=1 //without numerodefunt --1 test
+          // const startIndex = tableName === 'decisionnaire'? 2:1;
+          for (let i = 1 ; i < tableFiels.length; i++) { //i=1 //without numerodefunt --1 // 
             updateQuery += `${tableFiels[i]} = ?, `;
             values.push(table[tableFiels[i]]);
           }
 
           updateQuery = updateQuery.slice(0, -2) + " WHERE numerodefunt = "+id;   
 
-          const [rows, fields] = await connection.execute(updateQuery,values);
-          result = rows;
+          try{
+            // const [rows, fields] = await connection.execute(updateQuery,values);
+            const stmt = await connection.prepare(updateQuery);
+
+            if (tableName === 'generated_documents' || tableName === 'uploaded_documents') {
+              for (let i = 0; i < values.length; i++) {  //start from 0 cz just the news values
+                if (values[i]) { // Only set if value is not null
+                  const byteValue = Buffer.from(values[i], 'base64');
+                  values[i] = byteValue;
+                } 
+              }
+            } 
+
+          const [rows, fields] = await stmt.execute(values);
+            result = rows;
+
+          }catch(err){
+            console.log(err);
+            reject({
+              title:'Error retrieving data from database',
+              error: err
+            });
+          }
+
+
           resolve(result); //status 200
 
         } else {
@@ -128,10 +154,26 @@ async function updateIntoDefunt(jsonData,id) {
             query += `?, `;
           }
           query = query.slice(0, -2) + `)`;
-          const [rows, fields] = await connection.execute(query,values);
-          const result = rows; 
-          resolve(result); //add status 201
+
+
+          // const [rows, fields] = await connection.execute(query,values);
+          const stmt = await connection.prepare(query);
+
+          if (tableName === 'generated_documents' || tableName === 'uploaded_documents') {
+            for (let i = 1; i < values.length; i++) { // Start at index 1 to skip the first column
+              if (values[i]) { // Only set if value is not null
+                const byteValue = Buffer.from(values[i], 'base64');
+                values[i] = byteValue;
+              } 
+            }
+          } 
+        const [result, fields] = await stmt.execute(values);
+  
+        result.push(rows);
+        resolve(result); //add status 201
         }
+
+        } //end if
       }
 
 

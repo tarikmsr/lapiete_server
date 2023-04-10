@@ -117,6 +117,23 @@ function getAllDefuntsData() {
         const [rows, fields] = await connection.execute(query);
 
         
+        if (rows && rows.length > 0 ) {
+          const row = rows[0];
+          const fields = Object.keys(row);
+          for (let j = 0; j < fields.length; j++) {
+            const field = fields[j];
+            if (row[field] && j > 0 && (table === 'generated_documents' || table === 'uploaded_documents')) {
+              const byteValue = Buffer.from(row[field]);
+              try{
+                row[field] = Array.from(byteValue);
+              }catch(err){
+                console.log(err);
+              }
+            }
+          }
+          rows[0] = row;  //test it later
+        } 
+        
         // data[table] = rows; 
         //// store all rows for the table
         ////change it to store all info in one json if table.numeroDefunt ==..
@@ -171,7 +188,29 @@ async function getOneDefuntById(numeroDefunt){
       const table = tablesName[i];
       const query = `SELECT * FROM ${table} WHERE numeroDefunt = ${numeroDefunt}`;
       const [rows, fields] = await connection.execute(query);
-      data[table] = rows != [] ? rows[0] : {};
+
+      // data[table] = rows != [] ? rows[0] : {};    
+
+      if (rows && rows.length > 0) {
+        const row = rows[0];
+        const fields = Object.keys(row);
+        for (let j = 0; j < fields.length; j++) {
+          const field = fields[j];
+          if (row[field] && j > 0 && (table === 'generated_documents' || table === 'uploaded_documents')) {
+            const byteValue = Buffer.from(row[field]);
+            try{
+              row[field] = Array.from(byteValue);
+            }catch(err){
+              console.log(err);
+            }
+          }
+        }
+        data[table] = row;
+      } else {
+        data[table] = {};
+      }
+
+
       if (i == tablesName.length - 1) {
         resolve(data);
       }
