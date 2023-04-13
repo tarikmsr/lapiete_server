@@ -15,6 +15,21 @@ app.use(cors({
   methods: ['GET', 'PUT', 'POST', 'DELETE'] //'HEAD', 'PATCH',
 }));
 
+
+
+// const whitelist = ['https://www.lapiete.com/', 'https://lapiete3.000webhostapp.com'];
+// const corsOptions = {
+//   origin: (origin, callback) => {
+//     if (whitelist.indexOf(origin) !== -1) {
+//       callback(null, true)
+//     } else {
+// callback(new Error('Not allowed by CORS'))
+//     }
+//   }
+// }
+// app.use(cors(corsOptions));
+
+
 app.use((req, res) => {
 
   switch (req.method) {

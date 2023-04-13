@@ -36,6 +36,7 @@ module.exports = async (req, res) => {
   .then(data => {
     res.writeHead(200, { "Content-Type": "application/json" });
     let jsonResult = JSON.stringify(data);
+    console.log(jsonResult)
     res.end(jsonResult);
   })
   .catch(err => {

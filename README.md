@@ -3,9 +3,14 @@
 
 ## Routes
 ```bash
+
 GET      /api/form
-POST     /api/form
 GET      /api/form/:id
+GET      /api/user/:id
+
+POST     /api/form
+POST     /api/login
+
 PUT      /api/form/:id
 DELETE   /api/form/:id
 

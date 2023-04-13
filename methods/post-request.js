@@ -1,26 +1,73 @@
 const requestToJsonparser = require("../util/body-parser");
 const { pool } = require('../methods/connection');
-const pg =require('pg');
+const {  loginValidation } = require('../util/validation');
+const { validationResult } = require('express-validator');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
-
-let lastId = 5; //start increment 
 let indexId = 1;
 
-function generateAutoIncrementId() {
-  lastId++;
-  const paddedNumber = lastId.toString().padStart(11, "0");
-  return paddedNumber;
+
+/**
+ * Generates a random integer between min (inclusive) and max (inclusive).
+ * @param {number} min - The minimum value.
+ * @param {number} max - The maximum value.
+ * @returns {number} The random integer generated.
+ */
+function getRandomInteger(min =1, max = 99999) {
+  return (Math.floor(Math.random() * (max - min + 1)) + min).toString().padStart(11, "0");
 }
+
+
+/**
+ * Retrieves the last numeroDefunt value from the defunt table.
+ * @returns {Promise<number>} A Promise that resolves to the last numeroDefunt value.
+ * @throws {Error} If there is an error retrieving data from the database.
+ */
+async function getLastDefuntId() {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const query = `SELECT numeroDefunt FROM defunt ORDER BY numeroDefunt DESC LIMIT 1`;
+      const connection = await pool.acquire();
+      try {
+        const [rows, fields] = await connection.execute(query);
+
+        const paddedNumber = (rows[0].numeroDefunt).toString().padStart(11, "0");
+        resolve(paddedNumber);
+      } finally {
+        if (connection) {
+          await pool.release(connection);
+        }
+      }
+    } catch (err) {
+      reject({
+        title: 'Error retrieving data from database',
+        error: err,
+      });
+    }
+  });
+}
+
 
 module.exports = async (req, res) => {
   if (req.url === "/api/form") {
     try {
 
-      let jsonData = await requestToJsonparser(req);
+      await getLastDefuntId()
+      .then(id => {
+        indexId = parseInt(id)+1;
+      })
+      .catch(err => {
+        console.log(err);
+        indexId =  parseInt(getRandomInteger()) ;
+      });
 
+
+      let jsonData = await requestToJsonparser(req);
       await insertNewDefunt(jsonData)
       .then(result => {
-        console.log("21");
+        console.log(result)
+
         res.writeHead(200, { "Content-Type": "application/json" });
         let jsonResult = JSON.stringify({
           "title": "insérsion du défunt avec succès",
@@ -30,15 +77,10 @@ module.exports = async (req, res) => {
         res.end(jsonResult);
       })
       .catch(err => {
-        console.log("error")
         console.log(err)
-
         res.writeHead(404 , { "Content-Type": "application/json" });
         res.end(
-          JSON.stringify({
-            title: "Impossible d'insérer ce défunt",
-            error: err,
-          })                 
+          JSON.stringify(err)                 
         );
       });
 
@@ -52,11 +94,99 @@ module.exports = async (req, res) => {
         })
       );
     }
-  } else {
+  } else if(req.url === "/api/login"){
+
+    let jsonData = await requestToJsonparser(req);
+
+    await login(jsonData)
+    .then(result => {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      let jsonResult = JSON.stringify(result);
+      res.end(jsonResult);
+    })
+    .catch(err => {
+      console.log(err)
+      res.writeHead(404 , { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify(err)                 
+      );
+    });
+
+
+
+  }else  {
     res.writeHead(404, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ title: "Not Found", message: "Route not found" }));
   }
 };
+
+async function login(jsonData) {
+  return new Promise(async (resolve, reject) => {
+
+    let connection;
+    try {
+    connection = await pool.acquire();
+    let query =`SELECT * FROM users WHERE email = ${connection.escape(jsonData.email)};`;
+    try {
+      const [result, fields] = await connection.execute(query);
+
+      if (!result.length) {
+        reject({
+          title:'Email or password is incorrect!-153',
+        });      
+      }
+      bcrypt.compare( jsonData.password, result[0]['password'], (err, bResult) => {
+                
+        if (err) {
+          console.log(err);
+          reject({
+            title:'Email or password is incorrect!-161',     
+          });     
+        }
+     
+        if (bResult) {
+          const token = jwt.sign({id:result[0].id},'the-super-strong-secrect',{ expiresIn: '1h' });  
+          connection.execute(`UPDATE users SET last_login = now() WHERE id = '${result[0].id}'`);
+                          
+          resolve({
+            title:'Connecté avec succès',
+            token: token,
+            user: result[0]
+          });
+        }  
+        reject({
+          title:'Email or password is incorrect! 175',
+        });
+
+      });
+
+
+    }catch(err){
+      console.log(err);
+      if (connection) await connection.rollback();
+      reject({
+        title:'Erreur lors de login 186',
+        error: err
+      });
+    }
+
+  } catch (err) {
+    console.log(err);
+    if (connection) await connection.rollback();
+    reject({
+      title:'Erreur lors de login 195',
+      error: err['sqlMessage']
+    });
+  } finally {
+    if (connection) {
+      await pool.release(connection);
+    }
+  }
+
+});
+
+}
+
 
 async function insertNewDefunt(jsonData) {
   return new Promise(async (resolve, reject) => {
@@ -64,10 +194,6 @@ async function insertNewDefunt(jsonData) {
     let connection;
     let res = [];    
     try {
-
-      console.log("post 66----uploaded_documents")
-      console.log(jsonData['uploaded_documents'])
-      console.log("post 68- fin")
 
     connection = await pool.acquire();
     // Insert into parent tables
@@ -81,11 +207,12 @@ async function insertNewDefunt(jsonData) {
       const primaryKey = tableKeys[0];
 
       if (tableName === 'defunt') {
-        // Use auto-increment for the primary key in defunt table
-        indexId = parseInt(generateAutoIncrementId());
+        // Use auto-increment for the primary key in defunt tabl
+
+        console.log("120- indexId: ",indexId);
         tableData[primaryKey] = indexId; 
 
-      let query = `INSERT INTO ${tableName} (${tableKeys.join(', ')})  VALUES (`;//?
+      let query = `INSERT INTO ${tableName} (${tableKeys.join(', ')})  VALUES (`;
       for (let i = 0; i < tableKeys.length; i++) {
         query += "?, ";
       }
@@ -95,11 +222,13 @@ async function insertNewDefunt(jsonData) {
         const [result, fields] = await connection.execute(query,values);
         res[0] = result;
 
+        resolve(res);
+
       }catch(err){
         console.log(err);
         if (connection) await connection.rollback();
         reject({
-          title:'Erreur lors de l\'insersion des données de la base de données',
+          title:'Erreur lors de l\'insersion des données de la base de données 100',
           error: err['sqlMessage']
         });
       }
@@ -143,6 +272,7 @@ async function insertNewDefunt(jsonData) {
       const [result, fields] = await stmt.execute(values);
 
       res[1] = result;
+      resolve(res);
 
       }catch(err){
 
@@ -151,7 +281,7 @@ async function insertNewDefunt(jsonData) {
     
         if (connection) await connection.rollback();
         reject({
-          title:'Erreur lors de l\'insersion des données de la base de données',
+          title:'Erreur lors de l\'insersion des données de la base de données 150',
           error: err['sqlMessage']
         });
       }
