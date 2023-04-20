@@ -4,6 +4,7 @@ const {  loginValidation } = require('../util/validation');
 const { validationResult } = require('express-validator');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+require('dotenv').config();
 
 let indexId = 1;
 
@@ -41,8 +42,8 @@ async function getLastDefuntId() {
       }
     } catch (err) {
       reject({
-        title: 'Error retrieving data from database',
-        error: err,
+        error: 'Error-retrieving-database',
+        // error: err,
       });
     }
   });
@@ -70,7 +71,7 @@ module.exports = async (req, res) => {
 
         res.writeHead(200, { "Content-Type": "application/json" });
         let jsonResult = JSON.stringify({
-          "title": "insérsion du défunt avec succès",
+          "message": "insertion-successful",
           "id": indexId
         });
         console.log(jsonResult)
@@ -89,12 +90,14 @@ module.exports = async (req, res) => {
       res.writeHead(404, { "Content-Type": "application/json" });
       res.end(
         JSON.stringify({
-          title: "Échec de l'insertion",
-          message: `${err.text}`,
+          error: "Échec de l'insertion",
+          // message: `${err.text}`,
         })
       );
     }
-  } else if(req.url === "/api/login"){
+  } else 
+  
+  if(req.url === "/api/login"){
 
     let jsonData = await requestToJsonparser(req);
 
@@ -114,88 +117,30 @@ module.exports = async (req, res) => {
 
 
 
-  }else  {
+  } else if(req.url === "/api/register"){
+  
+
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ message: "not created yet", error: "Route not found" }));
+
+
+  }
+  else  {
     res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ title: "Not Found", message: "Route not found" }));
+    res.end(JSON.stringify({ message: "Not Found", error: "Route not found" }));
   }
 };
 
-async function login(jsonData) {
-  return new Promise(async (resolve, reject) => {
-
-    let connection;
-    try {
-    connection = await pool.acquire();
-    let query =`SELECT * FROM users WHERE email = ${connection.escape(jsonData.email)};`;
-    try {
-      const [result, fields] = await connection.execute(query);
-
-      if (!result.length) {
-        reject({
-          title:'Email or password is incorrect!-153',
-        });      
-      }
-      bcrypt.compare( jsonData.password, result[0]['password'], (err, bResult) => {
-                
-        if (err) {
-          console.log(err);
-          reject({
-            title:'Email or password is incorrect!-161',     
-          });     
-        }
-     
-        if (bResult) {
-          const token = jwt.sign({id:result[0].id},'the-super-strong-secrect',{ expiresIn: '1h' });  
-          connection.execute(`UPDATE users SET last_login = now() WHERE id = '${result[0].id}'`);
-                          
-          resolve({
-            title:'Connecté avec succès',
-            token: token,
-            user: result[0]
-          });
-        }  
-        reject({
-          title:'Email or password is incorrect! 175',
-        });
-
-      });
-
-
-    }catch(err){
-      console.log(err);
-      if (connection) await connection.rollback();
-      reject({
-        title:'Erreur lors de login 186',
-        error: err
-      });
-    }
-
-  } catch (err) {
-    console.log(err);
-    if (connection) await connection.rollback();
-    reject({
-      title:'Erreur lors de login 195',
-      error: err['sqlMessage']
-    });
-  } finally {
-    if (connection) {
-      await pool.release(connection);
-    }
-  }
-
-});
-
-}
 
 
 async function insertNewDefunt(jsonData) {
   return new Promise(async (resolve, reject) => {
-    
     let connection;
     let res = [];    
     try {
 
     connection = await pool.acquire();
+
     // Insert into parent tables
     for (let tableName in jsonData) {
       if (!jsonData.hasOwnProperty(tableName)) continue;
@@ -208,8 +153,6 @@ async function insertNewDefunt(jsonData) {
 
       if (tableName === 'defunt') {
         // Use auto-increment for the primary key in defunt tabl
-
-        console.log("120- indexId: ",indexId);
         tableData[primaryKey] = indexId; 
 
       let query = `INSERT INTO ${tableName} (${tableKeys.join(', ')})  VALUES (`;
@@ -228,8 +171,8 @@ async function insertNewDefunt(jsonData) {
         console.log(err);
         if (connection) await connection.rollback();
         reject({
-          title:'Erreur lors de l\'insersion des données de la base de données 100',
-          error: err['sqlMessage']
+          error:'error-insert-defunt',
+          // error: err['sqlMessage']
         });
       }
     } //end if
@@ -281,8 +224,8 @@ async function insertNewDefunt(jsonData) {
     
         if (connection) await connection.rollback();
         reject({
-          title:'Erreur lors de l\'insersion des données de la base de données 150',
-          error: err['sqlMessage']
+          error:'Error-retrieving-database',
+          // error: err['sqlMessage']
         });
       }
       resolve(res[1]);
@@ -302,14 +245,74 @@ async function insertNewDefunt(jsonData) {
 
 
   } catch (err) {
-    console.log("error post 160");
+    console.log("error post 405");
     console.log(err);
 
     if (connection) await connection.rollback();
 
     reject({
-      title:'Erreur lors de l\'insersion des données de la base de données',
-      error: err['sqlMessage']
+      error:'Error-insert-database',
+      // error: err['sqlMessage']
+    });
+  } finally {
+    if (connection) {
+      await pool.release(connection);
+    }
+  }
+
+});
+
+}
+
+
+
+
+async function login(jsonData) {
+  return new Promise(async (resolve, reject) => {
+
+    let connection;
+    try {
+    connection = await pool.acquire();
+    
+    let query = `SELECT * FROM users WHERE email = ${connection.escape(jsonData.email)};`;
+    const [result, fields] = await connection.execute(query);
+
+      if (!result.length) {
+        reject({
+          error:'user-not-found',
+        });      
+      }
+      bcrypt.compare( jsonData.password, result[0]['password'], (err, bResult) => {
+                
+        if (err) {
+          console.log(err);
+          reject({
+            error:'Password filed not exist',     
+          });     
+        }
+     
+        if (bResult) {
+          const token = jwt.sign({id:result[0].id}, process.env.SECRET_KEY ,{ expiresIn: '48h' });  
+          connection.execute(`UPDATE users SET last_login = now() WHERE id = '${result[0].id}'`);
+                          
+          resolve({
+            message:'connection-succefull',
+            token: token,
+            user: result[0]
+          });
+        }  
+        reject({
+          error:'wrong-password',
+        });
+
+      });
+
+  } catch (err) {
+    console.log(err);
+    if (connection) await connection.rollback();
+    reject({
+      error:'Erreur-with-database',
+      // error: err['sqlMessage']
     });
   } finally {
     if (connection) {

@@ -1,4 +1,8 @@
 const { pool } = require('../methods/connection');
+// require('dotenv').config();
+// const bcrypt = require('bcryptjs');
+// const jwt = require('jsonwebtoken');
+// const connection = require('../methods/connection');
 
 const tablesName =[
   'defunt',
@@ -29,23 +33,20 @@ module.exports = async (req, res) => {
 
 
   if (req.url === "/api/user" ) {  //&& regexNumbers.test(id)
- 
+
     const id = 1;
     //email +password ?    
     await getUserData(id)
   .then(data => {
     res.writeHead(200, { "Content-Type": "application/json" });
     let jsonResult = JSON.stringify(data);
-    console.log(jsonResult)
+    // console.log(jsonResult)
     res.end(jsonResult);
   })
   .catch(err => {
-    res.writeHead(400, { "Content-Type": "application/json" });
+    res.writeHead(404, { "Content-Type": "application/json" });
     res.end(
-      JSON.stringify({
-        title: "Impossible d'obtenir les données de l'utilisateur",
-        error: err.err.error['message'],
-      })
+      JSON.stringify(err)
     );
   });
   
@@ -61,7 +62,7 @@ module.exports = async (req, res) => {
       res.end(jsonResult);
     })
     .catch(err => {
-      res.writeHead(400, { "Content-Type": "application/json" });
+      res.writeHead(404, { "Content-Type": "application/json" });
       res.end(
         JSON.stringify({
           title: "Impossible d'obtenir les données des utilisateurs",
@@ -72,7 +73,7 @@ module.exports = async (req, res) => {
 
 
   } else if (!regexNumbers.test(id)) {
-    res.writeHead(400, { "Content-Type": "application/json" });
+    res.writeHead(404, { "Content-Type": "application/json" });
     res.end(
       JSON.stringify({
         title: "Échec de la validation",
@@ -81,25 +82,32 @@ module.exports = async (req, res) => {
     );
   } else if (baseUrl === "/api/form/" && regexNumbers.test(id)) {
 
+
+    //check token
+    // console.log(92)
+    // console.log(req)
+
+
     await getOneDefuntById(id)
     .then(data => {
+      // console.log(data)
+      
       res.writeHead(200, { "Content-Type": "application/json" });
       let jsonResult = JSON.stringify(data);
       res.end(jsonResult);
     })
     .catch(err => {
-      res.writeHead(400, { "Content-Type": "application/json" });
+      console.log(err)
+
+      res.writeHead(404, { "Content-Type": "application/json" });
       res.end(
-        JSON.stringify({
-          title: `Impossible d'obtenir des données sur les défunts (numeroDefunt : ${id})`,
-          error: err.error['message'],
-        })
+        JSON.stringify(err)
       );
     });
 
   } else {
     res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ title: "Not Found", message: "Route not found" }));
+    res.end(JSON.stringify({ message: "Not Found", error: "Route not found" }));
   }
 };
 
@@ -190,8 +198,6 @@ async function getOneDefuntById(numeroDefunt){
       const query = `SELECT * FROM ${table} WHERE numeroDefunt = ${numeroDefunt}`;
       const [rows, fields] = await connection.execute(query);
 
-      // data[table] = rows != [] ? rows[0] : {};    
-
       if (rows && rows.length > 0) {
         const row = rows[0];
         const fields = Object.keys(row);
@@ -207,12 +213,19 @@ async function getOneDefuntById(numeroDefunt){
           }
         }
         data[table] = row;
-      } else {
+      } else
+       if(table == tablesName[0]){
+        reject({
+          error:'defunt-doesnot-exist',
+        });
+
+       }else  
+      {
         data[table] = {};
       }
 
-
       if (i == tablesName.length - 1) {
+        data['error'] = null;
         resolve(data);
       }
     } //end for
@@ -221,8 +234,8 @@ async function getOneDefuntById(numeroDefunt){
     if (connection) await connection.rollback();
 
     reject({
-      title:'Error retrieving data from database',
-      error: err
+      error:'Error-retrieving-database',
+      // error: err
     });
   } finally {
     if (connection) {
@@ -261,8 +274,8 @@ async function getUserData(id) {
 
     } catch (err) {
       reject({
-        title:'Error retrieving data from database',
-        error: err
+        error:'Error-retrieving-database',
+        // error: err
       });
     }
   })

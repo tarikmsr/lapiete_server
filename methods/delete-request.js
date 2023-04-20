@@ -19,11 +19,11 @@ module.exports = (req, res) => {
   // );
 
   if (!regexNumbers.test(id)) {
-    res.writeHead(400, { "Content-Type": "application/json" });
+    res.writeHead(404, { "Content-Type": "application/json" });
     res.end(
       JSON.stringify({
-        title: "Validation Failed",
-        message: "UUID is not valid",
+        message: "Validation Failed",
+        error: "UUID is not valid",
       })
     );  
   } else if (baseUrl === "/api/form/" && regexNumbers.test(id)) {
@@ -35,35 +35,34 @@ module.exports = (req, res) => {
 
       res.writeHead(200, { "Content-Type": "application/json" });
       let jsonResult = JSON.stringify({
-        "title": "Supprission du defunt avec succès",
-        "message": result
+        "message": "Supprission du defunt avec succès",
       });
       res.end(jsonResult);
     })
     .catch(err => {
-      res.writeHead(400, { "Content-Type": "application/json" });
+      res.writeHead(404, { "Content-Type": "application/json" });
       res.end(
         JSON.stringify({
-          title: "échec de la suppression du defunt",
-          error: err.error['message'],
+          error: "échec de la suppression du defunt",
+          // error: err.error['message'],
         })
       );
     });
 
 
   } catch (err) {
-    res.writeHead(400, { "Content-Type": "application/json" });
+    res.writeHead(404, { "Content-Type": "application/json" });
     res.end(
       JSON.stringify({
-        title: "échec de la suppression",
-        message: `${err.text}`,
+        error: "échec de la suppression",
+        // message: `${err.text}`,
       })
     );
   }
 
   } else {
     res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ title: "Not Found", message: "Route not found" }));
+    res.end(JSON.stringify({ message: "Not Found", error: "Route not found" }));
   }
 };
 
@@ -91,8 +90,8 @@ async function deleteDefunt(id) {
     resolve(result);
   } catch (err) {
     reject({
-      title:'Error retrieving data from database',
-      error: err
+      error:'Error-retrieving-database',
+      // error: err
     });  
   } finally {
     if (connection) {

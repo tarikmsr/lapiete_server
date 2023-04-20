@@ -1,7 +1,12 @@
 const requestToJsonparser = require("../util/body-parser");
 const { pool } = require('../methods/connection');
-let result;
+require('dotenv').config();
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
+
+
+let result = {};
 
 /**
  * Generates a random integer between min (inclusive) and max (inclusive).
@@ -36,8 +41,9 @@ async function getLastDefuntId() {
       }
     } catch (err) {
       reject({
-        title: 'Error retrieving data from database',
-        error: err,
+        error: 'Error-retrieving-database',
+        // error: err,
+        message: 'cannot get last id'
       });
     }
   });
@@ -54,18 +60,36 @@ module.exports = async (req, res) => {
     // /^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i
   // );
 
+  if(req.url === "/api/login"){
+
+    let jsonData = await requestToJsonparser(req);
+
+    await login(jsonData)
+    .then(result => {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      let jsonResult = JSON.stringify(result);
+      res.end(jsonResult);
+    })
+    .catch(err => {
+      console.log(err)
+      res.writeHead(404 , { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify(err)                 
+      );
+    });
+
+  } else
   if (!regexNumbers.test(id)) {
-    res.writeHead(400, { "Content-Type": "application/json" });
+    res.writeHead(404, { "Content-Type": "application/json" });
     res.end(
       JSON.stringify({
-        title: "Échec de la validation",
-        message: "L'UUID n'est pas valide",
+        // title: "Échec de la validation",
+        error: "L'UUID n'est pas valide",
       })
     );
   } else if (baseUrl === "/api/form/" && regexNumbers.test(id)) {
     try {
       let jsonData = await requestToJsonparser(req);  
-
 
       if(id === '0') {
         await getLastDefuntId()
@@ -82,9 +106,8 @@ module.exports = async (req, res) => {
          
           res.writeHead(200, { "Content-Type": "application/json" });
           let jsonResult = JSON.stringify({
-            "title": "insérsion du défunt avec succès",
+            "message": "insertion-successful",
             "id": indexId,
-            "message":result,
           });
           res.end(jsonResult);
         })
@@ -98,25 +121,20 @@ module.exports = async (req, res) => {
 
 
 
-
-
       }else{
         await updateIntoDefunt(jsonData,id)
         .then(result => {
           res.writeHead(200, { "Content-Type": "application/json" });
           let jsonResult = JSON.stringify({
-            "title": "Mise à jour de defunt avec succès",
-            "message": result
+            "message": "update-successful",
+            // "message": result
           });
           res.end(jsonResult);
         })
         .catch(err => {
-          res.writeHead(400, { "Content-Type": "application/json" });
+          res.writeHead(404, { "Content-Type": "application/json" });
           res.end(
-            JSON.stringify({
-              title: "Impossible de mettre à jour ce defunt",
-              error: err.error['message']['info'],
-            })                 
+            JSON.stringify(err)                 
           );
         });
       }
@@ -127,16 +145,17 @@ module.exports = async (req, res) => {
       res.writeHead(404, { "Content-Type": "application/json" });
       res.end(
         JSON.stringify({
-          title: "Validation Failed",
-          message: "Request Json is not valid : "+err,
+          error: "Request Json is not valid : "+err,
         })
       );
     }
   } else {
     res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ title: "Not Found", message: "Route not found" }));
+    res.end(JSON.stringify({ message: "Not Found", error: "Route not found" }));
   }
 };
+
+
 
 async function updateIntoDefunt(jsonData,id) {
   return new Promise(async (resolve, reject) => {
@@ -152,7 +171,7 @@ async function updateIntoDefunt(jsonData,id) {
 
         let table = jsonData[tableName];
         if(table != null){
-        const tableFiels = Object.keys(table);
+        const tableFields = Object.keys(table);
         
         let query1 = "SELECT * FROM "+tableName+" WHERE numerodefunt = ?";
         let values1 =  [id];
@@ -166,8 +185,8 @@ async function updateIntoDefunt(jsonData,id) {
           console.log(err);
           if (connection) await connection.rollback();
           reject({
-            title:'Error retrieving data from database',
-            error: err
+            error:'Error-retrieving-database',
+            // error: err
           });
         }
 
@@ -175,10 +194,19 @@ async function updateIntoDefunt(jsonData,id) {
 
           let updateQuery = "UPDATE "+tableName+" SET ";  
           let values = [];
+
           // const startIndex = tableName === 'decisionnaire'? 2:1;
-          for (let i = 1 ; i < tableFiels.length; i++) { //i=1 //without numerodefunt --1 // 
-            updateQuery += `${tableFiels[i]} = ?, `;
-            values.push(table[tableFiels[i]]);
+          for (let i = 1 ; i < tableFields.length; i++) { //i=1 //without numerodefunt --1 // 
+            if (!table[tableFields[i]]) {
+              continue; // skip adding id field to updateQuery if value is null
+            }
+            updateQuery += `${tableFields[i]} = ?, `;
+    
+            if (Array.isArray(table[tableFields[i]]) && table[tableFields[i]].length === 0) {
+              values.push(null);  
+            } else {
+              values.push(table[tableFields[i]]);
+            }
           }
 
           updateQuery = updateQuery.slice(0, -2) + " WHERE numerodefunt = "+id;   
@@ -198,31 +226,30 @@ async function updateIntoDefunt(jsonData,id) {
 
           const [rows, fields] = await stmt.execute(values);
             result = rows;
-
+  
           }catch(err){
             console.log(err);
             reject({
-              title:'Error retrieving data from database',
-              error: err
+              error:'unable-update-defunt',
+              // error: err
             });
           }
-
-
           resolve(result); //status 200
 
         } else {
 
           let query = "INSERT INTO "+tableName+" ( numeroDefunt,"; //numeroDefunt, but what if the id n'exist pas //need to create defubnt first
           let values = [id]; //[];
-          for (let i = 1; i < tableFiels.length; i++) {
-            query += `${tableFiels[i]}, `;
-            values.push(table[tableFiels[i]]);
+          for (let i = 1; i < tableFields.length; i++) {
+            query += `${tableFields[i]}, `;
+            values.push(table[tableFields[i]]);
           }
           query = query.slice(0, -2) + `) VALUES (?, `;
-          for (let i = 1; i < tableFiels.length-1; i++) { //-1 because of numeroDefunt
+          for (let i = 1; i < tableFields.length; i++) { //tableFields.length-1 because of numeroDefunt
             query += `?, `;
           }
           query = query.slice(0, -2) + `)`;
+
 
 
           // const [rows, fields] = await connection.execute(query,values);
@@ -236,9 +263,9 @@ async function updateIntoDefunt(jsonData,id) {
               } 
             }
           } 
-        const [result, fields] = await stmt.execute(values);
+        const [rows, fields] = await stmt.execute(values);
   
-        result.push(rows);
+        result = rows;
         resolve(result); //add status 201
         }
 
@@ -248,9 +275,10 @@ async function updateIntoDefunt(jsonData,id) {
 
   } catch (err) {
     if (connection) await connection.rollback();
+    console.log(err)
     reject({
-      title:'Error retrieving data from database',
-      error: err
+      error:'Error-retrieving-database',
+      // error: err
     });
   } finally {
     if (connection) {
@@ -302,8 +330,8 @@ async function insertNewDefunt(jsonData) {
         console.log(err);
         if (connection) await connection.rollback();
         reject({
-          title:'Erreur lors de l\'insersion des données de la base de données 300',
-          error: err['sqlMessage']
+          error:'error-insert-defunt',
+          // error: err['sqlMessage']
         });
       }
     } //end if
@@ -349,14 +377,12 @@ async function insertNewDefunt(jsonData) {
       resolve(res);
 
       }catch(err){
-
-        console.log(121)
         console.log(err)
     
         if (connection) await connection.rollback();
         reject({
-          title:'Erreur lors de l\'insersion des données de la base de données 360',
-          error: err['sqlMessage']
+          error:'Error-retrieving-database',
+          // error: err['sqlMessage']
         });
       }
       resolve(res[1]);
@@ -376,14 +402,72 @@ async function insertNewDefunt(jsonData) {
 
 
   } catch (err) {
-    console.log("error post 160");
     console.log(err);
 
     if (connection) await connection.rollback();
 
     reject({
-      title:'Erreur lors de l\'insersion des données de la base de données',
-      error: err['sqlMessage']
+      error:'Error-insert-database',
+      // error: err['sqlMessage']
+    });
+  } finally {
+    if (connection) {
+      await pool.release(connection);
+    }
+  }
+
+});
+
+}
+
+
+
+async function login(jsonData) {
+  return new Promise(async (resolve, reject) => {
+
+    let connection;
+    try {
+    connection = await pool.acquire();
+    
+    let query = `SELECT * FROM users WHERE email = ${connection.escape(jsonData.email)};`;
+    const [result, fields] = await connection.execute(query);
+
+      if (!result.length) {
+        reject({
+          error:'user-not-found',
+        });      
+      }
+      bcrypt.compare( jsonData.password, result[0]['password'], (err, bResult) => {
+                
+        if (err) {
+          console.log(err);
+          reject({
+            error:'Password filed not exist',     
+          });     
+        }
+     
+        if (bResult) {
+          const token = jwt.sign({id:result[0].id}, process.env.SECRET_KEY ,{ expiresIn: '48h' });  
+          connection.execute(`UPDATE users SET last_login = now() WHERE id = '${result[0].id}'`);
+                          
+          resolve({
+            message:'connection-succefull',
+            token: token,
+            user: result[0]
+          });
+        }  
+        reject({
+          error:'wrong-password',
+        });
+
+      });
+
+  } catch (err) {
+    console.log(err);
+    if (connection) await connection.rollback();
+    reject({
+      error:'Erreur-with-database',
+      // error: err['sqlMessage']
     });
   } finally {
     if (connection) {
