@@ -15,9 +15,9 @@ const tablesName =[
   'concession',
   'rapatriement',
   'vol',
-  'documents',//?
-  'generated_documents',
+
   'uploaded_documents',
+  'generated_documents',
 
 ];
 
@@ -26,6 +26,10 @@ module.exports = async (req, res) => {
   let id = req.url.split("/")[3];
   
   const regexNumbers = /^[0-9]+$/;
+  // const regexLetters = /^[a-zA-Z]+$/;
+  const regexLetters = /^[a-zA-Z0-9_-]+$/;
+
+
 
   // const regexV4 = new RegExp(
   // /^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i
@@ -72,11 +76,16 @@ module.exports = async (req, res) => {
     });
 
 
-  } else if (!regexNumbers.test(id)) {
+  } else if (!regexNumbers.test(id) && !regexLetters.test(id)) {
+
+    console.log("test url 81 get ");
+    console.log(!regexNumbers.test(id));
+    console.log(!regexLetters.test(id));
+
     res.writeHead(404, { "Content-Type": "application/json" });
     res.end(
       JSON.stringify({
-        title: "Échec de la validation",
+        error: "Échec de la validation",
         message: "L'UUID n'est pas valide ou l'itinéraire n'a pas été trouvé",
       })
     );
@@ -85,13 +94,9 @@ module.exports = async (req, res) => {
 
     //check token
     // console.log(92)
-    // console.log(req)
-
 
     await getOneDefuntById(id)
-    .then(data => {
-      // console.log(data)
-      
+    .then(data => {      
       res.writeHead(200, { "Content-Type": "application/json" });
       let jsonResult = JSON.stringify(data);
       res.end(jsonResult);
@@ -105,7 +110,36 @@ module.exports = async (req, res) => {
       );
     });
 
-  } else {
+  } else if (baseUrl === "/api/form/" && regexLetters.test(id)) {    
+
+    //check token
+    // console.log(109)
+
+    console.log("test - 118");
+        
+    console.log(id);
+
+
+
+    await getDefuntByName(id)
+    .then(data => {      
+      res.writeHead(200, { "Content-Type": "application/json" });
+      let jsonResult = JSON.stringify(data);
+      res.end(jsonResult);
+    })
+    .catch(err => {
+      console.log(err)
+
+      res.writeHead(404, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify(err)
+      );
+    });
+
+
+  } else
+  
+  {
     res.writeHead(404, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ message: "Not Found", error: "Route not found" }));
   }
@@ -125,7 +159,7 @@ function getAllDefuntsData() {
 
         const [rows, fields] = await connection.execute(query);
 
-        
+
         if (rows && rows.length > 0 ) {
           const row = rows[0];
           const fields = Object.keys(row);
@@ -206,13 +240,14 @@ async function getOneDefuntById(numeroDefunt){
           if (row[field] && j > 0 && (table === 'generated_documents' || table === 'uploaded_documents')) {
             const byteValue = Buffer.from(row[field]);
             try{
-              row[field] = Array.from(byteValue);
+              row[field] =  Array.from(byteValue.toJSON().data);
             }catch(err){
               console.log(err);
             }
           }
         }
         data[table] = row;
+
       } else
        if(table == tablesName[0]){
         reject({
@@ -232,7 +267,7 @@ async function getOneDefuntById(numeroDefunt){
 
   } catch (err) {
     if (connection) await connection.rollback();
-
+    console.log(err);
     reject({
       error:'Error-retrieving-database',
       // error: err
@@ -243,6 +278,79 @@ async function getOneDefuntById(numeroDefunt){
     }
   }
   });
+}
+
+
+/**
+* @param {string} lastName - The last name of the defunt to retrieve.
+* @returns {Promise<Object>} A Promise that resolves to an object containing the
+* retrieved data, with keys for each table name and values for the corresponding
+* row data.
+* @throws {Error} If there is an error retrieving data from the database.
+*/
+async function getDefuntByName(lastName) {
+
+  return new Promise(async (resolve, reject) => {
+    try {
+
+      const tableName = 'defunt';
+      let query = `SELECT * FROM ${tableName} WHERE LOWER(defuntNom) LIKE LOWER('%${lastName}%')`;
+      var results = [];
+
+      const connection = await pool.acquire();
+      try {
+        const [rows, fields] = await connection.execute(query);
+        results = rows;
+        console.log(rows);
+        console.log(rows.length == 1);
+        if(rows.length == 1){
+          var id = rows[0]['numeroDefunt'];
+           if (connection) { //end the first
+          await pool.release(connection);
+          }
+
+          await getOneDefuntById(id)
+          .then(data => {   
+            console.log("data");
+            console.log(data);
+
+            resolve(data);
+          })
+          .catch(err => {
+            console.log(err)
+            reject({
+              error:'Error-retrieving-database',
+              msg: err //
+            });
+    
+          });
+
+        }else{
+          
+          resolve(rows);
+        }
+
+      } finally {
+        if (connection && results.length != 1) {
+          try{ //don't excute if search by name
+            await pool.release(connection);
+         } catch (err) {
+          console.log(err);
+
+        }
+        }
+      }
+
+    } catch (err) {
+      console.log("err-339");
+      console.log(err);
+
+      reject({
+        error:'Error-retrieving-database',
+        // error: err
+      });
+    }
+  })
 }
 
 
@@ -273,6 +381,7 @@ async function getUserData(id) {
       }
 
     } catch (err) {
+      console.log(err);
       reject({
         error:'Error-retrieving-database',
         // error: err
@@ -280,3 +389,5 @@ async function getUserData(id) {
     }
   })
 }
+
+

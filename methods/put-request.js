@@ -32,7 +32,14 @@ async function getLastDefuntId() {
       try {
         const [rows, fields] = await connection.execute(query);
 
-        const paddedNumber = (rows[0].numeroDefunt).toString().padStart(11, "0");
+        console.log("last id");
+        console.log(rows);
+
+        let paddedNumber;
+        if(rows.length == 0){
+          paddedNumber = 1;
+        }
+        paddedNumber = (rows[0].numeroDefunt).toString().padStart(11, "0");
         resolve(paddedNumber);
       } finally {
         if (connection) {
@@ -160,6 +167,9 @@ module.exports = async (req, res) => {
 async function updateIntoDefunt(jsonData,id) {
   return new Promise(async (resolve, reject) => {
     
+    // console.log("-------------------------------------171------------------------------"); 
+    // console.log(jsonData); //!!
+
   let connection;
   const tablesNames = Object.keys(jsonData);
 
@@ -197,7 +207,7 @@ async function updateIntoDefunt(jsonData,id) {
 
           // const startIndex = tableName === 'decisionnaire'? 2:1;
           for (let i = 1 ; i < tableFields.length; i++) { //i=1 //without numerodefunt --1 // 
-            if (!table[tableFields[i]]) {
+            if ((tableName === 'generated_documents' || tableName === 'uploaded_documents') && !table[tableFields[i]]) {
               continue; // skip adding id field to updateQuery if value is null
             }
             updateQuery += `${tableFields[i]} = ?, `;
@@ -213,16 +223,39 @@ async function updateIntoDefunt(jsonData,id) {
 
           try{
             // const [rows, fields] = await connection.execute(updateQuery,values);
+
+            console.log("\n--------------------------------220-------------------------------------");
+            console.log(table);23
+            console.log("222--updateQuery");
+            console.log(updateQuery);
+
             const stmt = await connection.prepare(updateQuery);
 
             if (tableName === 'generated_documents' || tableName === 'uploaded_documents') {
               for (let i = 0; i < values.length; i++) {  //start from 0 cz just the news values
                 if (values[i]) { // Only set if value is not null
-                  const byteValue = Buffer.from(values[i], 'base64');
-                  values[i] = byteValue;
+                  console.log(values[i]);
+
+                  const byteValue = Buffer.from(values[i]); // ,'base64'
+                  
+                  console.log("byteValue");
+                  console.log(byteValue);
+                  values[i] = byteValue;           
+                         
                 } 
               }
+
             } 
+            
+            // console.log("\n---------------------------------------------------------------------");
+            // console.log(`updateQuery - ${tableName}`);
+            // console.log(updateQuery);
+
+            // console.log("values");
+            // console.log(values);
+            // console.log("---------------------------------------------------------------------\n");
+
+
 
           const [rows, fields] = await stmt.execute(values);
             result = rows;
