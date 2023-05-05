@@ -200,7 +200,7 @@ async function updateIntoDefunt(jsonData,id) {
           });
         }
 
-        if (id === 0 || isExistTableInDB.length > 0) {
+        if (isExistTableInDB.length > 0) { 
 
           let updateQuery = "UPDATE "+tableName+" SET ";  
           let values = [];
@@ -269,6 +269,11 @@ async function updateIntoDefunt(jsonData,id) {
           }
           resolve(result); //status 200
 
+
+
+
+
+          
         } else {
 
           let query = "INSERT INTO "+tableName+" ( numeroDefunt,"; //numeroDefunt, but what if the id n'exist pas //need to create defubnt first

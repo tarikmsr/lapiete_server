@@ -95,7 +95,7 @@ module.exports = async (req, res) => {
     //check token
     // console.log(92)
 
-    await getOneDefuntById(id)
+    await getOneDefuntDataById(id)
     .then(data => {      
       res.writeHead(200, { "Content-Type": "application/json" });
       let jsonResult = JSON.stringify(data);
@@ -121,7 +121,7 @@ module.exports = async (req, res) => {
 
 
 
-    await getDefuntByName(id)
+    await getDefuntDataByName(id)
     .then(data => {      
       res.writeHead(200, { "Content-Type": "application/json" });
       let jsonResult = JSON.stringify(data);
@@ -219,7 +219,7 @@ function getAllDefuntsData() {
  * row data.
  * @throws {Error} If there is an error retrieving data from the database.
  */
-async function getOneDefuntById(numeroDefunt){
+async function getOneDefuntDataById(numeroDefunt){
   return new Promise(async (resolve, reject) => {
 
     let connection;
@@ -230,6 +230,7 @@ async function getOneDefuntById(numeroDefunt){
     for (let i = 0; i < tablesName.length; i++) {
       const table = tablesName[i];
       const query = `SELECT * FROM ${table} WHERE numeroDefunt = ${numeroDefunt}`;
+
       const [rows, fields] = await connection.execute(query);
 
       if (rows && rows.length > 0) {
@@ -247,6 +248,8 @@ async function getOneDefuntById(numeroDefunt){
           }
         }
         data[table] = row;
+
+        
 
       } else
        if(table == tablesName[0]){
@@ -288,7 +291,7 @@ async function getOneDefuntById(numeroDefunt){
 * row data.
 * @throws {Error} If there is an error retrieving data from the database.
 */
-async function getDefuntByName(lastName) {
+async function getDefuntDataByName(lastName) {
 
   return new Promise(async (resolve, reject) => {
     try {
@@ -309,7 +312,7 @@ async function getDefuntByName(lastName) {
           await pool.release(connection);
           }
 
-          await getOneDefuntById(id)
+          await getOneDefuntDataById(id)
           .then(data => {   
             console.log("data");
             console.log(data);
