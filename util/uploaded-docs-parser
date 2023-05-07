@@ -1,0 +1,75 @@
+module.exports = async (request) => {
+    return new Promise((resolve, reject) => {
+      try {
+
+        let rows = request;
+
+        const defunt = {
+            numeroDefunt: rows[0]['numeroDefunt'] ?? null,
+            defuntCivilite: rows[0]['defuntCivilite'] ?? null,
+            defuntNom: rows[0]['defuntNom'] ?? null,
+            defuntPrenom: rows[0]['defuntPrenom'] ?? null,
+            defuntNomJeuneFille: rows[0]['defuntNomJeuneFille'] ?? null,
+            defuntDateDeNaissance: rows[0]['defuntDateDeNaissance'] == null ? null : new Date(rows[0]['defuntDateDeNaissance']),
+            defuntLieuDeNaissance: rows[0]['defuntLieuDeNaissance'] ?? null,
+            defuntAdresse: rows[0]['defuntAdresse'] ?? null,
+            defuntCodePostal: rows[0]['defuntCodePostal'] ?? null,
+            defuntVille: rows[0]['defuntVille'] ?? null,
+            defuntNationalite: rows[0]['defuntNationalite'] ?? null,
+            defuntProfession: rows[0]['defuntProfession'] ?? null,
+            defuntNombreEnfants: rows[0]['defuntNombreEnfants'] ?? null,
+            created_at: rows[0]['created_at'] ?? null,
+          };
+
+
+ 
+          //2.31Mb
+
+
+          const uploaded_documents = {
+            numeroDefunt: rows[0]['numeroDefunt'] ?? null,
+            cni_origin_defunt: null,
+            cni_fr_defunt: Buffer.from(rows[0]['cni_fr_defunt'].map(e => Number(e))).toJSON().data ?? null,
+            actNaissance: null,
+            cniOriginDec: null,
+            cniFrDec: null,
+            passport1:null,
+            // passport2: [22, 23, 24],
+            // certificatDeces: [25, 26, 27],
+            // actDeces: [28, 29, 30],
+            // fermetureCercueil: [31, 32, 33],
+            // attestationCovid: [34, 35, 36],
+            // autorisationPrefecture: [37, 38, 39],
+            // autorisationConsulaire: [40, 41, 42],
+            // confirmationVol: [43, 44, 45],
+            // pouvoir: [46, 47, 48],
+            // declarationDeces: [49, 50, 51],
+            // miseEnBiere: [52, 53, 54],
+            // attestationHonneur: [55, 56, 57],
+            // attestationAccompagnateurs: [58, 59, 60],
+            // justificationLienParente: [61, 62, 63],
+            // achatConcession: [64, 65, 66],
+            // bonTravaux: [67, 68, 69],
+          };
+          
+    
+          
+
+      
+
+
+          
+          let jsonData = {};
+          // jsonData['defunt'] = defunt;
+          jsonData['uploaded_documents'] =  uploaded_documents;
+          ;
+
+
+
+        resolve(jsonData); 
+      } catch (err) {
+        console.log(err);
+        reject(err);
+      }
+    });
+  };
