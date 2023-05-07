@@ -30,8 +30,6 @@ module.exports = async (req, res) => {
   // const regexLetters = /^[a-zA-Z]+$/;
   const regexLetters = /^[a-zA-Z0-9_-]+$/;
 
-
-
   // const regexV4 = new RegExp(
   // /^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i
   // );
@@ -85,56 +83,18 @@ module.exports = async (req, res) => {
         message: "L'UUID n'est pas valide ou l'itinéraire n'a pas été trouvé",
       })
     );
-  } else if (baseUrl === "/api/form/docs/" && regexNumbers.test(req.url.split("/")[4]) ) {
+  } else if (baseUrl === "/api/form/docs/" && regexNumbers.test(req.url.split("?")[0].split("/")[4]) ) {
 
-    let id = req.url.split("/")[4];
-    await getOneDefuntuploadedDataById(id,'act_naissance') ///cni_fr_defunt
+    let id = req.url.split("?")[0].split("/")[4];
+    const { fileName } = req.query;
+    await getOneDefuntuploadedDataById(id,fileName) ///cni_fr_defunt
     .then(data => {    
-      console.log("data-----116");
-      console.log(data);  
 
-      // const blob = new Blob([data], { type: 'application/octet-stream' });
-      // console.log("----------------109-blob---------");
-      // console.log(blob);
-      // console.log("----------------111-blob---------\n\n");
-
-      
-      // res.status(200); 
-      // res.setHeader('Content-Type', 'application/octet-stream');
-      // res.send(blob);
-
-      
-      // const data = await getOneDefuntuploadedDataById(id, 'cni_fr_defunt');
-      const filename = `file_${id}.bin`;
+      const file_name = `${fileName}`;//${fileName}_${id}.bin
       res.setHeader('Content-Type', 'application/octet-stream');
-      // res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Disposition', `attachment; filename="${file_name}"`);
       res.send(data);
 
-
-      // const filename = `file_${id}.bin`;
-
-      // const url = URL.createObjectURL(blob);
-      // const link = document.createElement('a');
-      // link.href = url;
-      // link.download = filename;
-      // document.body.appendChild(link);
-      // link.click();
-      // document.body.removeChild(link);
-      // res.status(200).end();
-
-
-      
-
-      // res.end(
-        // JSON.stringify({'test':'testv'})
-      // );
-
-      // res.writeHead(200, { "Content-Type": "application/json" });
-      // let jsonResult = JSON.stringify(data);
-      // res.end(jsonResult);
-
-
-       //// res.end(Buffer.from(blob));
     })
     .catch(err => {
       console.log(err)
@@ -170,12 +130,8 @@ module.exports = async (req, res) => {
    } else if (baseUrl === "/api/form/" && regexLetters.test(id)) {    
 
     //check token
-    // console.log(109)
-
-    console.log("test - 118");
-        
-    console.log(id);
-
+    // console.log("test - 118");
+    // console.log(id);
 
 
     await getDefuntDataByName(id)
@@ -267,6 +223,7 @@ function getAllDefuntsData() {
 }
 
 
+
 /**
  * Retrieves a defunt and their uploaded docs associated data by their ID.
  *
@@ -280,29 +237,13 @@ async function getOneDefuntuploadedDataById(numeroDefunt, fileName){
   return new Promise(async (resolve, reject) => {
     let connection;
   try {
-    let data = {};
-     connection = await pool.acquire();
-
-
-     // ${fileName}
-
-     const query = `SELECT *
+    connection = await pool.acquire();
+    const query = `SELECT ${fileName}
      FROM uploaded_documents AS upd WHERE upd.numeroDefunt = ${numeroDefunt}`;
 
-     const [rows, fields] = await connection.execute(query);
+    const [rows, fields] = await connection.execute(query);
+    resolve(rows[0][`${fileName}`]);
 
-     console.log("rows");
-     console.log(rows);
-    //  let bufferFile = Buffer.from(rows[0]['cni_fr_defunt'].map(e => Number(e))).toJSON().data ?? null;
-    // let jsonData = await jsonUplodedDocs(rows);
-    // resolve(rows[0][`${fileName}`]);
-    const blob = new Blob(rows[0]['cni_fr_defunt'], { type: 'application/octet-stream' });
-
-    
-    resolve(blob);
-
-
-     
   } catch (err) {
     if (connection) await connection.rollback();
     console.log(err);
@@ -355,41 +296,9 @@ async function getOneDefuntDataById(numeroDefunt){
 
      const [rows, fields] = await connection.execute(query);
 
-    //  LEFT JOIN uploaded_documents AS upd ON d.numeroDefunt = upd.numeroDefunt
-    //  LEFT JOIN generated_documents AS gd ON d.numeroDefunt = gd.numeroDefunt
-
-    let jsonData = await jsonP(rows);
-
-    console.log("---------- 307 ---------");
-
-    // let docFile = await getOneDefuntuploadedDataById(numeroDefunt,'cni_fr_defunt');
-
-    // await getOneDefuntuploadedDataById(connection,numeroDefunt,'cni_fr_defunt')
-    // .then(data => {   
-
-    //   console.log("data--------");
-    //   console.log(data);
-          
-    // console.log("---------- 310 ---------");
-
-    //   resolve(data);
-    // })
-    // .catch(err => {
-    //   console.log(err)
-    //   reject({
-    //     error:'Error-retrieving-database',
-    //     msg: err //
-    //   });
-
-    // });
-
-
-
-
-
-    ///
-    resolve(jsonData);
-
+     let jsonData = await jsonP(rows);
+    
+     resolve(jsonData);
 
 
 if(1===2){ //hide for test
@@ -429,9 +338,7 @@ if(1===2){ //hide for test
 
       if (i == tablesName.length - 1) {
         data['error'] = null;
-
-        console.log("-------------4800--------");
-        console.log(data);
+        // console.log(data);
         resolve(data);
       }
     } //end for
@@ -475,8 +382,8 @@ async function getDefuntDataByName(lastName) {
         const [rows, fields] = await connection.execute(query);
         results = rows;
 
-        console.log(rows);
-        console.log(rows.length == 1);
+        // console.log(rows);
+        // console.log(rows.length == 1);
 
 
         if(rows.length == 1){
@@ -487,9 +394,7 @@ async function getDefuntDataByName(lastName) {
 
           await getOneDefuntDataById(id)
           .then(data => {   
-            console.log("data");
-            console.log(data);
-
+            // console.log(data);
             resolve(data);
           })
           .catch(err => {
