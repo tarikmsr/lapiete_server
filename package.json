@@ -27,8 +27,14 @@
     "express-validator": "^6.15.0",
     "fs": "^0.0.1-security",
     "generic-pool": "^3.9.0",
+    "hummus": "^1.0.115",
     "jsonwebtoken": "^9.0.0",
+    "muhammara": "^3.8.0",
     "mysql2": "^3.2.0",
+    "pdf-page-counter": "^1.0.3",
+    "pdf-poppler": "^0.2.1",
+    "pdf2pic": "^2.1.4",
+    "pdfkit": "^0.13.0",
     "pg": "^8.10.0"
   }
 }

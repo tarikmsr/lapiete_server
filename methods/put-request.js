@@ -167,8 +167,8 @@ module.exports = async (req, res) => {
 async function updateIntoDefunt(jsonData,id) {
   return new Promise(async (resolve, reject) => {
     
-    // console.log("-------------------------------------171------------------------------"); 
-    // console.log(jsonData); //!!
+    console.log("-------------------------------------171------------------------------"); 
+    console.log(jsonData); //!!
 
   let connection;
   const tablesNames = Object.keys(jsonData);
