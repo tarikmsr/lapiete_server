@@ -4,15 +4,18 @@
 ## Routes
 ```bash
 
+
 GET      /api/form
-GET      /api/form/:id
-GET      /api/user/:id
+GET      /api/form/:defuntId
+GET      /api/form/docs/:defuntId
+GET      /api/form/download/:defuntId ? index: folderIndex
+GET      /api/user/:defuntId
 
 POST     /api/form
 POST     /api/login
 
-PUT      /api/form/:id
-DELETE   /api/form/:id
+PUT      /api/form/:defuntId
+DELETE   /api/form/:defuntId
 
 ```
 

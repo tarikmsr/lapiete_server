@@ -2,7 +2,7 @@ const { pool } = require('../methods/connection');
 const jsonP = require('../util/tojson-parser');
 const hummus = require('hummus');
 const fs = require("fs");
-
+const PDFDocument = require('pdfkit');
 
 const tablesName =[
   'defunt',
@@ -57,6 +57,11 @@ function getFileExtension(file) { //Uint8List file
   return '';
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
 
 module.exports = async (req, res) => {
 
@@ -167,19 +172,25 @@ module.exports = async (req, res) => {
     const defuntId = regexNumbers.test(req.url.split("?")[0].split("/")[4]);
     const { index } = req.query; //from parametre
 
-    await getGeneratedFileById(defuntId,index)
+    await getGeneratedFolderFileById(defuntId,index)
         .then(filePDFPath => {
 
           const fileName = filePDFPath.split('/').pop();
+
           res.setHeader('Content-Type', 'application/octet-stream');
           res.setHeader('Content-Disposition', `attachment; filename=${fileName}`); //${pdfDoc.Title}
-
           const fileStream = fs.createReadStream(filePDFPath.toString());
           fileStream.pipe(res);
-          console.log("filePDFPath : ",filePDFPath);
-          //when finish remove the file
 
-          console.log("----end--");
+          // console.log("filePDFPath : ",filePDFPath);
+          //delete tmp files
+          // const directoryPath = filePDFPath.substring(0, filePDFPath.lastIndexOf('/') + 1);
+          // const files = fs.readdirSync(directoryPath);
+          // files.forEach((file) => {
+          //   if (file.startsWith(`_tmp_image_`)) {//defunt id or name
+          //     fs.unlinkSync(`${directoryPath}${file}`);
+          //   }
+          // });
 
         })
         .catch(err => {
@@ -333,40 +344,40 @@ function getFilesNameByIndex(index){
     let filesName = '';
     switch (index) {
       case '0': //mairie
-        filesName = ',pouvoir, cni_fr_dec, cni_fr_defunt, act_naissance, declaration_deces, tm_apres_mb';  //, tm_apres_mb
+        filesName = ',pouvoir, cni_fr_dec, cni_fr_defunt, act_naissance, declaration_deces, tm_apres_mb'; 
         break;
       case '1': //Prefecture
-        filesName = ',demande_prefecture, pouvoir, cni_fr_dec, certificat_deces, act_deces, fermeture_cercueil';  //, demande_prefecture
+        filesName = ',demande_prefecture, pouvoir, cni_fr_dec, certificat_deces, act_deces, fermeture_cercueil';
         break;
       case '2': //consulat
-        filesName = ',demande_consulaire, pouvoir, cni_origin_defunt, certificat_deces, attestation_covid, act_deces, mise_en_biere,attestation_honneur';  //, demande_consulaire
+        filesName = ',demande_consulaire, pouvoir, cni_origin_defunt, certificat_deces, attestation_covid, act_deces, mise_en_biere,attestation_honneur'; 
         break;
       case '3': //deroulement rap
-        filesName = ',deroulement_rap';  //deroulement_rap
+        filesName = ',deroulement_rap';          
         break;
       case '4': //fret
-        filesName = ',page_garde_garde, pouvoir, cni_fr_dec, cni_fr_defunt, certificat_deces, attestation_covid, act_deces, fermeture_cercueil, mise_en_biere, autorisation_prefecture, autorisation_consulaire';  //, tm_apres_mb
+        filesName = ',page_garde_garde, pouvoir, cni_fr_dec, cni_fr_defunt, certificat_deces, attestation_covid, act_deces, fermeture_cercueil, mise_en_biere, autorisation_prefecture, autorisation_consulaire';  
         break;
       case '5': //ambilance
-        filesName = ',page_garde_garde, certificat_deces, attestation_covid, act_deces, autorisation_prefecture, autorisation_consulaire, deroulement_rap, confirmation_vol';  //, deroulement_rap
+        filesName = ',page_garde_garde, certificat_deces, attestation_covid, act_deces, autorisation_prefecture, autorisation_consulaire, deroulement_rap, confirmation_vol';  
         break;
       case '6': //assurance //Dossier famille
         filesName = ',page_garde_garde, page_condoleance, deroulement_rap, pouvoir, cni_fr_dec, cni_origin_defunt, certificat_deces, attestation_covid, act_deces, autorisation_prefecture, autorisation_consulaire';  //, deroulement_rap //page_garde_garde, page_condoleance,
         break;
       case '7': //assuranse2 //Accompagnateur
-        filesName = ',attestation_accompagnateurs, passport1, passport2, act_deces, justification_lien_parente, deroulement_rap';//deroulement_rap
+        filesName = ',attestation_accompagnateurs, passport1, passport2, act_deces, justification_lien_parente, deroulement_rap';
         break;
       case '8'://21://
-        filesName = ',pouvoir, cni_fr_dec, cni_fr_defunt, act_naissance, declaration_deces, tm_apres_mb';  //, tm_apres_mb
+        filesName = ',pouvoir, cni_fr_dec, cni_fr_defunt, act_naissance, declaration_deces, tm_apres_mb'; 
         break;
-      case '9'://22://Cimetiere inhmairie inh
-        filesName = ',pouvoir, cni_fr_dec, certificat_deces, act_deces, fermeture_cercueil, achat_concession, bon_travaux'; //if achat_concession, bon_travaux null check achat_de_concession, bon_de_travaux in generated
+      case '9'://22://Cimetiere inh
+        filesName = ',pouvoir, cni_fr_dec, certificat_deces, act_deces, fermeture_cercueil, achat_concession, bon_travaux'; //if achat_concession, bon_travaux null check achat_de_concession, bon_de_travaux in generated                 
         break;
       case '10'://23://Deroulement inh
-        filesName = ',deroulement_inh';  //deroulement_rap
+        filesName = ',deroulement_inh'; 
         break;
       case '11': //24://Dossier famille
-        filesName = ',page_garde_garde, page_condoleance, deroulement_inh, pouvoir, cni_fr_dec, cni_origin_defunt, certificat_deces, act_dece';  //, deroulement_inh
+        filesName = ',page_garde_garde, page_condoleance, deroulement_inh, pouvoir, cni_fr_dec, cni_origin_defunt, certificat_deces, act_dece'; 
         break;
       default:
         console.log("No index corresponding");
@@ -375,6 +386,7 @@ function getFilesNameByIndex(index){
     resolve(filesName);
   });
 }
+
 
 /**
  * Retrieves a defunt and their associated data by their ID.
@@ -386,7 +398,7 @@ function getFilesNameByIndex(index){
  * row data.
  * @throws {Error} If there is an error retrieving data from the database.
  */
-async function getGeneratedFileById(numeroDefunt,index) {
+async function getGeneratedFolderFileById(numeroDefunt,index) {
   return new Promise(async (resolve, reject) => {
 
     let connection;
@@ -411,11 +423,7 @@ async function getGeneratedFileById(numeroDefunt,index) {
       LEFT JOIN generated_documents AS gd ON d.numeroDefunt = gd.numeroDefunt
       WHERE upd.numeroDefunt = ${numeroDefunt}`;
       const [rows, fields] = await connection.execute(query);
-
-      console.log("index : ",index)
-      console.log("filesName : ",filesName)
       console.log("445-- rows-",rows);
-
 
       if(rows.length > 0){
         const filePDFPath = `${tmpDirectoryPath}dossier_${foldersTitle[index]}_${rows[0]['defuntNom']}.pdf`;
@@ -425,67 +433,48 @@ async function getGeneratedFileById(numeroDefunt,index) {
         doc.Producer = 'Lapiete';
         doc.Creator  = 'Lapiete';//admin_Id
 
-        listFilesName //array of files name
-            .forEach(fileName => {
-              if(rows[0][`${fileName}`] != null){
+        for (const fileName of listFilesName) {
+          if(rows[0][`${fileName}`] != null){
 
-                let fileBuffer = Buffer.from(rows[0][`${fileName}`]);
-                let extension = getFileExtension(fileBuffer);
+            let fileBuffer = Buffer.from(rows[0][`${fileName}`]);
+            let extension = getFileExtension(fileBuffer);
 
-                console.log("463-- extension-",fileName,extension);
+            if(fileBuffer != null && extension != 'pdf'){
+              const imagePath = `${tmpDirectoryPath}_tmp_image_${rows[0]['defuntNom']}_${fileName}.pdf`;
+              //convert image to pdf
+              let docTmp = new PDFDocument();
+              docTmp.image(fileBuffer, {fit: [500, 500]});
+              docTmp.pipe(fs.createWriteStream(imagePath));
+              docTmp.end();
 
-                if(fileBuffer != null && extension != 'pdf'){
-                  console.log("\n\nimag : ",fileBuffer)
-
-                  let imageBytes = rows[0][`${fileName}`];
-                  // Specify the directory and file path for the image
-                  const imagePath = `${tmpDirectoryPath}image_${fileName}.${extension}`;
-                  // Create the directory if it doesn't exist
-                  if (!fs.existsSync(tmpDirectoryPath)) {
-                    fs.mkdirSync(tmpDirectoryPath, { recursive: true });
-                  }
-                  fs.writeFileSync(imagePath, imageBytes);
-
-
-
-
-                  let imageXObject;
-                  if(extension == 'jpg' || extension == 'jpeg')
-                    imageXObject = doc.createImageXObjectFromJPG(imagePath);
-                  if(extension == 'png')
-                    imageXObject = doc.createFormXObjectFromPNG(imagePath);
-
-                  console.log("imageXObject : ",imageXObject,"\n")
-                  console.log("retrieveJPGImageInformation : ",doc.retrieveJPGImageInformation(imagePath))
-
-                  const page = doc.createPage();
-
-                  console.log("imag created \n");
-                  // page.
-                  doc.writePage(page);
-                  doc.createFormXObject(10,10,500,500,imageXObject.id);
-
-                  doc.createFormXObjectFromJPG(imagePath,imageXObject.id);
-
-                  // doc.createFormXObject(10,10,500,500,imageXObject.id);
-
-                  console.log("doc : ",doc)
-
-                  // Delete the tmp image file
-                  fs.unlinkSync(imagePath);
-                }else
-                {
-                  let pdfStream =  new hummus.PDFRStreamForBuffer(fileBuffer);
-                  let pdfReader =  hummus.createReader(pdfStream);
-                  const pageCount = pdfReader.getPagesCount();
-
-                  for (let i = 0; i < pageCount; i++) {
-                    doc.createPDFCopyingContext(pdfReader)
-                        .appendPDFPageFromPDF(parseInt(i.toString()));
-                  }
-                }//end else
+              // Wait until the file is created
+              while (!fs.existsSync(imagePath)) {
+                await sleep(50); // Sleep for 50 milliseconds
               }
-            });
+
+              // Insert PDF file into the main PDF
+              if (fs.existsSync(imagePath)) {
+                let pdfReader = hummus.createReader(imagePath);
+                doc.createPDFCopyingContext(pdfReader).appendPDFPageFromPDF(0);
+              }
+
+              // Delete the temporary image file
+              // await sleep(1000); // Sleep for 1 second
+              // fs.unlinkSync(imagePath); //Error: EBUSY: resource busy or locked,
+
+            }else
+            {
+              let pdfStream =  new hummus.PDFRStreamForBuffer(fileBuffer);
+              let pdfReader =  hummus.createReader(pdfStream);
+              const pageCount = pdfReader.getPagesCount();
+
+              for (let i = 0; i < pageCount; i++) {
+                doc.createPDFCopyingContext(pdfReader)
+                    .appendPDFPageFromPDF(parseInt(i.toString()));
+              }
+            }//end else
+          }
+        }
         // Save the PDF
         doc.end();
         resolve(filePDFPath);
