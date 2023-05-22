@@ -1,8 +1,9 @@
 const { pool } = require('../methods/connection');
 const jsonP = require('../util/tojson-parser');
-const hummus = require('hummus');
+const { PDFDocument } = require('pdf-lib');
 const fs = require("fs");
-const PDFDocument = require('pdfkit');
+const saveLogs = require('../util/logger');
+
 
 const tablesName =[
   'defunt',
@@ -17,8 +18,7 @@ const tablesName =[
   'vol',
 
   'uploaded_documents',
-  'generated_documents',
-
+  'generated_documents'
 ];
 
 
@@ -125,7 +125,7 @@ module.exports = async (req, res) => {
 
     let id = req.url.split("?")[0].split("/")[4];
     const { fileName } = req.query;
-    await getOneDefuntUploadedDataById(id,fileName) ///cni_fr_defunt
+    await getOneDefuntUploadedDataById(id,fileName) //cni_fr_defunt
         .then(data => {
 
           const file_name = `${fileName}`;//${fileName}_${id}.bin
@@ -169,33 +169,49 @@ module.exports = async (req, res) => {
   }
   else if (baseUrl === "/api/form/download/" && regexNumbers.test(req.url.split("?")[0].split("/")[4]) ) {
 
-    const defuntId = regexNumbers.test(req.url.split("?")[0].split("/")[4]);
+    const defuntId = req.url.split("?")[0].split("/")[4];
     const { index } = req.query; //from parametre
 
+    console.log("175-- defuntId-",defuntId);
+
+
     await getGeneratedFolderFileById(defuntId,index)
-        .then(filePDFPath => {
+        .then(async filePDFPath => {
 
+          //// pdfkit  ////
+          //   const chunks = [];
+          //   pdfDoc.on('data', chunk => {
+          // chunks.push(chunk);
+          // });
+          //
+          // pdfDoc.on('end', () => {
+          //   const buffer = Buffer.concat(chunks);
+          //   res.setHeader('Content-Type', 'application/octet-stream');
+          //   res.setHeader('Content-Disposition', `attachment; filename="${pdfDoc.info.Title}.pdf"`);
+          //   res.end(buffer);
+          // });
+          // //
+          // pdfDoc.end();
+
+
+          ///// receive : filePDFPath
           const fileName = filePDFPath.split('/').pop();
-
           res.setHeader('Content-Type', 'application/octet-stream');
           res.setHeader('Content-Disposition', `attachment; filename=${fileName}`); //${pdfDoc.Title}
           const fileStream = fs.createReadStream(filePDFPath.toString());
           fileStream.pipe(res);
 
-          // console.log("filePDFPath : ",filePDFPath);
-          //delete tmp files
-          // const directoryPath = filePDFPath.substring(0, filePDFPath.lastIndexOf('/') + 1);
-          // const files = fs.readdirSync(directoryPath);
-          // files.forEach((file) => {
-          //   if (file.startsWith(`_tmp_image_`)) {//defunt id or name
-          //     fs.unlinkSync(`${directoryPath}${file}`);
-          //   }
-          // });
+          await sleep(1000); //wait until transfert
+
+
+          console.log("filePDFPath : ", filePDFPath);
+          fs.unlinkSync(filePDFPath);
+          console.log("--- end ---");
+
 
         })
         .catch(err => {
           console.log(err)
-
           res.writeHead(404, { "Content-Type": "application/json" });
           res.end(
               JSON.stringify(err)
@@ -268,8 +284,8 @@ function getAllDefuntsData() {
         }
 
         // data[table] = rows;
-        //// store all rows for the table
-        ////change it to store all info in one json if table.numeroDefunt ==..
+        // store all rows for the table
+        //change it to store all info in one json if table.numeroDefunt ==..
 
         for (let j = 0; j < rows.length; j++) {
           let rowData = rows[j];
@@ -377,7 +393,7 @@ function getFilesNameByIndex(index){
         filesName = ',deroulement_inh'; 
         break;
       case '11': //24://Dossier famille
-        filesName = ',page_garde_garde, page_condoleance, deroulement_inh, pouvoir, cni_fr_dec, cni_origin_defunt, certificat_deces, act_dece'; 
+        filesName = ',page_garde_garde, page_condoleance, deroulement_inh, pouvoir, cni_fr_dec, cni_origin_defunt, certificat_deces, act_deces'; 
         break;
       default:
         console.log("No index corresponding");
@@ -410,6 +426,9 @@ async function getGeneratedFolderFileById(numeroDefunt,index) {
       const tmpDirectoryPath = './util/cache/';
 
 
+
+      // const fileLog = fs.createWriteStream(`${tmpDirectoryPath}logs_generatedFolder.txt`);
+
       await getFilesNameByIndex(index)
           .then(_filesName => {
             filesName = _filesName;
@@ -421,17 +440,22 @@ async function getGeneratedFolderFileById(numeroDefunt,index) {
       From defunt as d
       LEFT JOIN uploaded_documents AS upd ON d.numeroDefunt = upd.numeroDefunt
       LEFT JOIN generated_documents AS gd ON d.numeroDefunt = gd.numeroDefunt
-      WHERE upd.numeroDefunt = ${numeroDefunt}`;
-      const [rows, fields] = await connection.execute(query);
+      WHERE upd.numeroDefunt = ?`;
+      const [rows, fields] = await connection.execute(query , [numeroDefunt]); //
+
+      console.log("443-- numeroDefunt-",numeroDefunt);
+
       console.log("445-- rows-",rows);
 
+
+
       if(rows.length > 0){
-        const filePDFPath = `${tmpDirectoryPath}dossier_${foldersTitle[index]}_${rows[0]['defuntNom']}.pdf`;
-        let doc = hummus.createWriter(`${filePDFPath}`);
-        doc.Title    = `Dossier_${foldersTitle[index]}_${rows[0]['defuntNom']}`;
-        doc.Author   = 'Lapiete';
-        doc.Producer = 'Lapiete';
-        doc.Creator  = 'Lapiete';//admin_Id
+
+        const mergedDoc = await PDFDocument.create();
+
+        mergedDoc.setTitle(`Dossier_${foldersTitle[index]}_${rows[0]['defuntNom']}`);
+        mergedDoc.setProducer('Lapiete'); // Set the Producer name
+        mergedDoc.setCreator('Lapiete'); //admin_Id
 
         for (const fileName of listFilesName) {
           if(rows[0][`${fileName}`] != null){
@@ -440,47 +464,48 @@ async function getGeneratedFolderFileById(numeroDefunt,index) {
             let extension = getFileExtension(fileBuffer);
 
             if(fileBuffer != null && extension != 'pdf'){
-              const imagePath = `${tmpDirectoryPath}_tmp_image_${rows[0]['defuntNom']}_${fileName}.pdf`;
-              //convert image to pdf
-              let docTmp = new PDFDocument();
-              docTmp.image(fileBuffer, {fit: [500, 500]});
-              docTmp.pipe(fs.createWriteStream(imagePath));
-              docTmp.end();
 
-              // Wait until the file is created
-              while (!fs.existsSync(imagePath)) {
-                await sleep(50); // Sleep for 50 milliseconds
-              }
+              const imageDoc = await PDFDocument.create();
+              const imagePage = imageDoc.addPage();
+              let image;
+              if(extension == 'jpg' || extension == 'jpeg')
+                image = await imageDoc.embedJpg(fileBuffer);
+              if(extension == 'png')
+                image = await imageDoc.embedPng(fileBuffer);
 
-              // Insert PDF file into the main PDF
-              if (fs.existsSync(imagePath)) {
-                let pdfReader = hummus.createReader(imagePath);
-                doc.createPDFCopyingContext(pdfReader).appendPDFPageFromPDF(0);
-              }
+              imagePage.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
+              const imageBytes = await imageDoc.save();
 
-              // Delete the temporary image file
-              // await sleep(1000); // Sleep for 1 second
-              // fs.unlinkSync(imagePath); //Error: EBUSY: resource busy or locked,
+              // Merge the converted image PDF with the main merged document
+              const imagePdf = await PDFDocument.load(imageBytes);
+              const pages = await mergedDoc.copyPages(imagePdf, [0]);
+              pages.forEach((page) => mergedDoc.addPage(page));
 
             }else
             {
-              let pdfStream =  new hummus.PDFRStreamForBuffer(fileBuffer);
-              let pdfReader =  hummus.createReader(pdfStream);
-              const pageCount = pdfReader.getPagesCount();
+  
+              // Add the PDF file as a byte array to the main merged document
+              const pdf = await PDFDocument.load(fileBuffer);
+              const pages = await mergedDoc.copyPages(pdf, pdf.getPageIndices());
+              pages.forEach((page) => mergedDoc.addPage(page));
 
-              for (let i = 0; i < pageCount; i++) {
-                doc.createPDFCopyingContext(pdfReader)
-                    .appendPDFPageFromPDF(parseInt(i.toString()));
-              }
             }//end else
           }
         }
-        // Save the PDF
-        doc.end();
+        // Save the PDF in local
+        const filePDFPath = `${tmpDirectoryPath}dossier_${foldersTitle[index]}_${rows[0]['defuntNom']}.pdf`;
+
+        const finalPdfBytes = await mergedDoc.save();
+        fs.writeFileSync(filePDFPath, finalPdfBytes);
+
+
+        // console.log("--mergedDoc--");
+        // console.log(mergedDoc);
         resolve(filePDFPath);
       }//end if rows
 
     } catch (err) {
+       saveLogs(`Error 513 - getGeneratedFolderFileById :  ${err}`);
       if (connection) await connection.rollback();
       console.log(err);
       reject({
@@ -532,6 +557,8 @@ async function getOneDefuntDataById(numeroDefunt){
       resolve(jsonData);
 
     } catch (err) {
+      saveLogs(`Error 562 - getOneDefuntDataById :  ${err}`);
+
       if (connection) await connection.rollback();
       console.log(err);
       reject({
@@ -574,6 +601,7 @@ async function getDefuntDataByName(lastName) {
           var id = rows[0]['numeroDefunt'];
           if (connection) { //end the first
             console.log("350-- search byName realise connection----");
+            saveLogs(`Note 606 - getDefuntDataByName connectection closed `);
 
             await pool.clear(connection);
             await pool.release(connection);
@@ -585,6 +613,7 @@ async function getDefuntDataByName(lastName) {
                 resolve(data);
               })
               .catch(err => {
+                saveLogs(`Error 617 - getDefuntDataByName :  ${err}`);
                 console.log(err)
                 reject({
                   error:'Error-retrieving-database',
@@ -600,6 +629,7 @@ async function getDefuntDataByName(lastName) {
         if (connection && results.length != 1) {
           try{ //don't excute if search by name
             console.log("377-- finally realise connection----");
+            
             await pool.release(connection);
           } catch (err) {
             console.log(err);
@@ -608,7 +638,8 @@ async function getDefuntDataByName(lastName) {
       }
 
     } catch (err) {
-      console.log("err- 625 -",err);
+      console.log("err- 642 -",err);
+      saveLogs(`Error 642 - getDefuntDataByName :  ${err}`);
       reject({
         error:'Error-retrieving-database',
         msg: err
@@ -645,6 +676,8 @@ async function getUserData(id) {
       }
 
     } catch (err) {
+      saveLogs(`Error 680 - getUserData :  ${err}`);
+
       console.log(err);
       reject({
         error:'Error-retrieving-database',
