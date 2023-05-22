@@ -4,6 +4,8 @@
 ## Routes
 ```bash
 
+GET      /api/user
+GET      /api/user/:id
 
 GET      /api/form
 GET      /api/form/:defuntId
