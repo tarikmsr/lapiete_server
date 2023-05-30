@@ -11,6 +11,9 @@ const pool = createPool({
       password: process.env.MYSQL_PASSWORD,
       database: process.env.MYSQL_DATABASE,
       waitForConnections: true,
+      connectionLimit: 100,
+      maxIdle:100, //!
+      maxPreparedStatements:100,
     });
     return connection;
   },

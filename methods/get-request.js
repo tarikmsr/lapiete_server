@@ -172,9 +172,6 @@ module.exports = async (req, res) => {
     const defuntId = req.url.split("?")[0].split("/")[4];
     const { index } = req.query; //from parametre
 
-    console.log("175-- defuntId-",defuntId);
-
-
     await getGeneratedFolderFileById(defuntId,index)
         .then(async filePDFPath => {
 
@@ -366,7 +363,7 @@ function getFilesNameByIndex(index){
         filesName = ',demande_prefecture, pouvoir, cni_fr_dec, certificat_deces, act_deces, fermeture_cercueil';
         break;
       case '2': //consulat
-        filesName = ',demande_consulaire, pouvoir, cni_origin_defunt, certificat_deces, attestation_covid, act_deces, mise_en_biere,attestation_honneur'; 
+        filesName = ',demande_consulaire, pouvoir,cni_fr_dec, cni_origin_defunt, certificat_deces, attestation_covid, act_deces, mise_en_biere,attestation_honneur'; 
         break;
       case '3': //deroulement rap
         filesName = ',deroulement_rap';          
@@ -442,8 +439,6 @@ async function getGeneratedFolderFileById(numeroDefunt,index) {
       LEFT JOIN generated_documents AS gd ON d.numeroDefunt = gd.numeroDefunt
       WHERE upd.numeroDefunt = ?`;
       const [rows, fields] = await connection.execute(query , [numeroDefunt]); //
-
-      console.log("443-- numeroDefunt-",numeroDefunt);
 
       console.log("445-- rows-",rows);
 

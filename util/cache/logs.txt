@@ -1,0 +1,8 @@
+[2023-05-23 12:49:24] Note 606 - getDefuntDataByName connectection closed 
+[2023-05-23 12:51:00] Note 606 - getDefuntDataByName connectection closed 
+[2023-05-23 12:51:30] Note 606 - getDefuntDataByName connectection closed 
+[2023-05-23 12:51:39] Note 606 - getDefuntDataByName connectection closed 
+[2023-05-23 12:56:05] Note 606 - getDefuntDataByName connectection closed 
+[2023-05-23 13:03:42] Note 606 - getDefuntDataByName connectection closed 
+[2023-05-23 13:07:30] Note 606 - getDefuntDataByName connectection closed 
+[2023-05-23 13:08:26] Note 606 - getDefuntDataByName connectection closed 
