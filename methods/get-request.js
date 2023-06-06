@@ -4,7 +4,6 @@ const { PDFDocument } = require('pdf-lib');
 const fs = require("fs");
 const saveLogs = require('../util/logger');
 
-
 const tablesName =[
   'defunt',
   'decisionnaire',
@@ -18,7 +17,7 @@ const tablesName =[
   'vol',
 
   'uploaded_documents',
-  'generated_documents'
+  'generated_documents',
 ];
 
 
@@ -66,7 +65,8 @@ function sleep(ms) {
 module.exports = async (req, res) => {
 
   let baseUrl = req.url.substring(0, req.url.lastIndexOf("/") + 1);
-  let id = req.url.split("/")[3];
+  let id = req.url.split("/")[3]; //pass by params
+
 
   const regexNumbers = /^[0-9]+$/;
   const regexLetters = /^[a-zA-Z0-9_-\u00C0-\u017F%]+$/;
@@ -91,7 +91,8 @@ module.exports = async (req, res) => {
 
 
 
-  } else if (req.url === "/api/form") {
+  }
+  else if (req.url === "/api/form") {
 
     await getAllDefuntsData()
         .then(data => {
@@ -149,7 +150,10 @@ module.exports = async (req, res) => {
   else if (baseUrl === "/api/form/" && regexNumbers.test(id)) {
 
     //check token
-    // console.log(92)
+    console.log(150);
+    console.log("params",req.params,'\n');
+    console.log("authorization:",req.headers.authorization); //test it remove Bearer
+
 
     await getOneDefuntDataById(id)
         .then(data => {
@@ -357,40 +361,40 @@ function getFilesNameByIndex(index){
     let filesName = '';
     switch (index) {
       case '0': //mairie
-        filesName = ',pouvoir, cni_fr_dec, cni_fr_defunt, act_naissance, declaration_deces, tm_apres_mb'; 
+        filesName = ',pouvoir, cni_fr_dec, cni_fr_defunt, act_naissance, declaration_deces, tm_apres_mb';
         break;
       case '1': //Prefecture
         filesName = ',demande_prefecture, pouvoir, cni_fr_dec, certificat_deces, act_deces, fermeture_cercueil';
         break;
       case '2': //consulat
-        filesName = ',demande_consulaire, pouvoir,cni_fr_dec, cni_origin_defunt, certificat_deces, attestation_covid, act_deces, mise_en_biere,attestation_honneur'; 
+        filesName = ',demande_consulaire, pouvoir, cni_fr_dec, cni_origin_defunt, certificat_deces, attestation_covid, act_deces, mise_en_biere, attestation_honneur';
         break;
       case '3': //deroulement rap
-        filesName = ',deroulement_rap';          
+        filesName = ',deroulement_rap';
         break;
       case '4': //fret
-        filesName = ',page_garde_garde, pouvoir, cni_fr_dec, cni_fr_defunt, certificat_deces, attestation_covid, act_deces, fermeture_cercueil, mise_en_biere, autorisation_prefecture, autorisation_consulaire';  
+        filesName = ',page_garde_garde, pouvoir, cni_fr_dec, cni_fr_defunt, certificat_deces, attestation_covid, act_deces, fermeture_cercueil, mise_en_biere, autorisation_prefecture, autorisation_consulaire';
         break;
       case '5': //ambilance
-        filesName = ',page_garde_garde, certificat_deces, attestation_covid, act_deces, autorisation_prefecture, autorisation_consulaire, deroulement_rap, confirmation_vol';  
+        filesName = ',page_garde_garde, certificat_deces, attestation_covid, act_deces, autorisation_prefecture, autorisation_consulaire, deroulement_rap, confirmation_vol';
         break;
       case '6': //assurance //Dossier famille
-        filesName = ',page_garde_garde, page_condoleance, deroulement_rap, pouvoir, cni_fr_dec, cni_origin_defunt, certificat_deces, attestation_covid, act_deces, autorisation_prefecture, autorisation_consulaire';  //, deroulement_rap //page_garde_garde, page_condoleance,
+        filesName = ',page_garde_garde, page_condoleance, deroulement_rap, pouvoir, cni_fr_dec, cni_origin_defunt, certificat_deces, attestation_covid, act_deces, autorisation_prefecture, autorisation_consulaire';
         break;
       case '7': //assuranse2 //Accompagnateur
         filesName = ',attestation_accompagnateurs, passport1, passport2, act_deces, justification_lien_parente, deroulement_rap';
         break;
       case '8'://21://
-        filesName = ',pouvoir, cni_fr_dec, cni_fr_defunt, act_naissance, declaration_deces, tm_apres_mb'; 
+        filesName = ',pouvoir, cni_fr_dec, cni_fr_defunt, act_naissance, declaration_deces, tm_apres_mb';
         break;
       case '9'://22://Cimetiere inh
-        filesName = ',pouvoir, cni_fr_dec, certificat_deces, act_deces, fermeture_cercueil, achat_concession, bon_travaux'; //if achat_concession, bon_travaux null check achat_de_concession, bon_de_travaux in generated                 
+        filesName = ',pouvoir, cni_fr_dec, certificat_deces, act_deces, fermeture_cercueil, achat_concession, bon_travaux'; //if achat_concession, bon_travaux null check achat_de_concession, bon_de_travaux in generated
         break;
       case '10'://23://Deroulement inh
-        filesName = ',deroulement_inh'; 
+        filesName = ',deroulement_inh';
         break;
       case '11': //24://Dossier famille
-        filesName = ',page_garde_garde, page_condoleance, deroulement_inh, pouvoir, cni_fr_dec, cni_origin_defunt, certificat_deces, act_deces'; 
+        filesName = ',page_garde_garde, page_condoleance, deroulement_inh, pouvoir, cni_fr_dec, cni_origin_defunt, certificat_deces, act_deces';
         break;
       default:
         console.log("No index corresponding");
@@ -438,11 +442,8 @@ async function getGeneratedFolderFileById(numeroDefunt,index) {
       LEFT JOIN uploaded_documents AS upd ON d.numeroDefunt = upd.numeroDefunt
       LEFT JOIN generated_documents AS gd ON d.numeroDefunt = gd.numeroDefunt
       WHERE upd.numeroDefunt = ?`;
-      const [rows, fields] = await connection.execute(query , [numeroDefunt]); //
-
-      console.log("445-- rows-",rows);
-
-
+      const [rows, fields] = await connection.execute(query , [numeroDefunt]);
+      // console.log("445-- rows-",rows);
 
       if(rows.length > 0){
 
@@ -458,7 +459,7 @@ async function getGeneratedFolderFileById(numeroDefunt,index) {
             let fileBuffer = Buffer.from(rows[0][`${fileName}`]);
             let extension = getFileExtension(fileBuffer);
 
-            if(fileBuffer != null && extension != 'pdf'){
+            if(fileBuffer != null && extension != 'null' && extension != 'pdf'){
 
               const imageDoc = await PDFDocument.create();
               const imagePage = imageDoc.addPage();
@@ -467,7 +468,6 @@ async function getGeneratedFolderFileById(numeroDefunt,index) {
                 image = await imageDoc.embedJpg(fileBuffer);
               if(extension == 'png')
                 image = await imageDoc.embedPng(fileBuffer);
-
               imagePage.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
               const imageBytes = await imageDoc.save();
 
@@ -476,9 +476,9 @@ async function getGeneratedFolderFileById(numeroDefunt,index) {
               const pages = await mergedDoc.copyPages(imagePdf, [0]);
               pages.forEach((page) => mergedDoc.addPage(page));
 
-            }else
+            }else if(extension == 'pdf')
             {
-  
+
               // Add the PDF file as a byte array to the main merged document
               const pdf = await PDFDocument.load(fileBuffer);
               const pages = await mergedDoc.copyPages(pdf, pdf.getPageIndices());
@@ -500,7 +500,7 @@ async function getGeneratedFolderFileById(numeroDefunt,index) {
       }//end if rows
 
     } catch (err) {
-       saveLogs(`Error 513 - getGeneratedFolderFileById :  ${err}`);
+      saveLogs(`Error 503 - getGeneratedFolderFileById :  ${err}`);
       if (connection) await connection.rollback();
       console.log(err);
       reject({
@@ -546,13 +546,12 @@ async function getOneDefuntDataById(numeroDefunt){
       WHERE d.numeroDefunt = ${numeroDefunt}`;
 
       const [rows, fields] = await connection.execute(query);
-
-      let jsonData = await jsonP(rows);
+      let jsonData = await jsonP(rows,numeroDefunt);
 
       resolve(jsonData);
 
     } catch (err) {
-      saveLogs(`Error 562 - getOneDefuntDataById :  ${err}`);
+      saveLogs(`Error 550 - getOneDefuntDataById :  ${err}`);
 
       if (connection) await connection.rollback();
       console.log(err);
@@ -571,7 +570,7 @@ async function getOneDefuntDataById(numeroDefunt){
 
 /**
  * @param {string} lastName - The last name of the defunt to retrieve.
- * @returns {Promise<Object>} A Promise that resolves to an object containing the
+ * @returns  {Promise<Array<Object>>} A Promise that resolves to an object containing the
  * retrieved data, with keys for each table name and values for the corresponding
  * row data.
  * @throws {Error} If there is an error retrieving data from the database.
@@ -579,70 +578,64 @@ async function getOneDefuntDataById(numeroDefunt){
 async function getDefuntDataByName(lastName) {
 
   return new Promise(async (resolve, reject) => {
+    let connection;
     try {
-      console.log(`search on : ${lastName}`);
+
+      //   saveLogs(`search on : ${lastName}`);
+      connection = await pool.acquire();
 
       const tableName = 'defunt';
       let query = `SELECT * FROM ${tableName} WHERE LOWER(defuntNom) LIKE LOWER('%${decodeURIComponent(lastName)}%')`;
-      var results = [];
 
-      const connection = await pool.acquire();
-      try {
-        const [rows, fields] = await connection.execute(query);
-        results = rows;
-        console.log(rows);
+      const [rows, fields] = await connection.execute(query);
 
-        if(rows.length == 1){
-          var id = rows[0]['numeroDefunt'];
-          if (connection) { //end the first
-            console.log("350-- search byName realise connection----");
-            saveLogs(`Note 606 - getDefuntDataByName connectection closed `);
+      //   resolve(rows);
 
-            await pool.clear(connection);
-            await pool.release(connection);
-          }
+      if(rows.length == 1){
 
-          await getOneDefuntDataById(id)
-              .then(data => {
-                console.log("------",data);
-                resolve(data);
-              })
-              .catch(err => {
-                saveLogs(`Error 617 - getDefuntDataByName :  ${err}`);
-                console.log(err)
-                reject({
-                  error:'Error-retrieving-database',
-                  msg: err //
-                });
+        var id = rows[0]['numeroDefunt'];
+        if (connection) { //end the first
+          console.log("350-- search byName realise connection----");
+          saveLogs(`Note 606 - getDefuntDataByName connectection closed `);
 
+          await pool.clear();//connection
+          await pool.release(connection);
+        }
+
+        await getOneDefuntDataById(id)
+            .then(data => {
+              console.log("------",data);
+              resolve(data);
+            })
+            .catch(err => {
+              saveLogs(`Error 617 - getDefuntDataByName :  ${err}`);
+              console.log(err)
+              reject({
+                error:'Error-retrieving-database',
+                msg: err //
               });
-        }else{
-          resolve(rows);
-        }
 
-      } finally {
-        if (connection && results.length != 1) {
-          try{ //don't excute if search by name
-            console.log("377-- finally realise connection----");
-            
-            await pool.release(connection);
-          } catch (err) {
-            console.log(err);
-          }
-        }
+            });
+      }else{
+        resolve(rows);
       }
 
     } catch (err) {
-      console.log("err- 642 -",err);
-      saveLogs(`Error 642 - getDefuntDataByName :  ${err}`);
+      saveLogs(`Error 562 - getOneDefuntDataById :  ${err}`);
+      //   if (connection) await connection.rollback();
+      if (connection) await connection.release(connection);
+      console.log(err);
       reject({
         error:'Error-retrieving-database',
-        msg: err
+        msg: err //!
       });
+    } finally {
+      if (connection) {
+        await pool.release(connection);
+      }
     }
   })
 }
-
 
 
 /**
@@ -681,5 +674,3 @@ async function getUserData(id) {
     }
   })
 }
-
-
