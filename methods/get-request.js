@@ -1,8 +1,9 @@
 const { pool } = require('../methods/connection');
 const jsonP = require('../util/tojson-parser');
 const { PDFDocument } = require('pdf-lib');
-const fs = require("fs");
 const saveLogs = require('../util/logger');
+const fs = require("fs");
+const jwt = require("jsonwebtoken");
 
 const tablesName =[
   'defunt',
@@ -19,7 +20,6 @@ const tablesName =[
   'uploaded_documents',
   'generated_documents',
 ];
-
 
 function getFileExtension(file) { //Uint8List file
   if (file.length < 12) {
@@ -66,16 +66,26 @@ module.exports = async (req, res) => {
 
   let baseUrl = req.url.substring(0, req.url.lastIndexOf("/") + 1);
   let id = req.url.split("/")[3]; //pass by params
-
-
   const regexNumbers = /^[0-9]+$/;
   const regexLetters = /^[a-zA-Z0-9_-\u00C0-\u017F%]+$/;
 
-  if (req.url === "/api/user" ) {  //&& regexNumbers.test(id)
+  try {
+    //test token
+    if(
+        !req.headers.authorization ||
+        !req.headers.authorization.startsWith('Bearer') ||
+        !req.headers.authorization.split(' ')[1]
+    ){
+      return res.status(422).json({
+        message: "Please provide a valid token",
+      });
+    }
+    const theToken = req.headers.authorization.split(' ')[1];
+    const decoded = jwt.verify(theToken, process.env.SECRET_KEY)
 
-    const id = 1;
+  if (req.url === "/api/user" ) {
     //email +password ?
-    await getUserData(id)
+    await getUserData(decoded.id)
         .then(data => {
           res.writeHead(200, { "Content-Type": "application/json" });
           let jsonResult = JSON.stringify(data);
@@ -88,12 +98,17 @@ module.exports = async (req, res) => {
               JSON.stringify(err)
           );
         });
-
-
-
+  }
+  else if (!regexNumbers.test(id) && !regexLetters.test(id)) {
+    res.writeHead(404, { "Content-Type": "application/json" });
+    res.end(
+        JSON.stringify({
+          error: "Échec de la validation",
+          message: "L'UUID n'est pas valide ou l'itinéraire n'a pas été trouvé",
+        })
+    );
   }
   else if (req.url === "/api/form") {
-
     await getAllDefuntsData()
         .then(data => {
           res.writeHead(200, { "Content-Type": "application/json" });
@@ -109,18 +124,6 @@ module.exports = async (req, res) => {
               })
           );
         });
-
-
-  }
-  else if (!regexNumbers.test(id) && !regexLetters.test(id)) {
-
-    res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(
-        JSON.stringify({
-          error: "Échec de la validation",
-          message: "L'UUID n'est pas valide ou l'itinéraire n'a pas été trouvé",
-        })
-    );
   }
   else if (baseUrl === "/api/form/docs/" && regexNumbers.test(req.url.split("?")[0].split("/")[4]) ) {
 
@@ -220,13 +223,7 @@ module.exports = async (req, res) => {
         });
 
   }
-
   else if (baseUrl === "/api/form/" && regexLetters.test(id)) {
-
-    //check token
-    // console.log("test - 118");
-    // console.log(id);
-
 
     await getDefuntDataByName(id)
         .then(data => {
@@ -244,12 +241,23 @@ module.exports = async (req, res) => {
         });
 
 
-  } else
-
-  {
+  }
+  else {
     res.writeHead(404, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ message: "Not Found", error: "Route not found" }));
   }
+
+
+  }
+  catch (err) {
+    if (err instanceof jwt.TokenExpiredError) {
+      // Handle token expiration error
+      return res.status(401).send({ msg: 'Token expired. Please log in again.' });
+    }
+    // Handle other errors
+    return res.status(401).send({ msg: 'Invalid token.' });
+  } finally{}
+
 };
 
 
@@ -317,7 +325,6 @@ function getAllDefuntsData() {
 }
 
 
-
 /**
  * Retrieves a defunt and their uploaded docs associated data by their ID.
  *
@@ -351,8 +358,6 @@ async function getOneDefuntUploadedDataById(numeroDefunt, fileName){
       }
     }
   });
-
-
 }
 
 
@@ -376,7 +381,7 @@ function getFilesNameByIndex(index){
         filesName = ',page_garde_garde, pouvoir, cni_fr_dec, cni_fr_defunt, certificat_deces, attestation_covid, act_deces, fermeture_cercueil, mise_en_biere, autorisation_prefecture, autorisation_consulaire';
         break;
       case '5': //ambilance
-        filesName = ',page_garde_garde, certificat_deces, attestation_covid, act_deces, autorisation_prefecture, autorisation_consulaire, deroulement_rap, confirmation_vol';
+        filesName = ',page_garde_garde, deroulement_rap,  certificat_deces, attestation_covid, act_deces, autorisation_prefecture, autorisation_consulaire, confirmation_vol';
         break;
       case '6': //assurance //Dossier famille
         filesName = ',page_garde_garde, page_condoleance, deroulement_rap, pouvoir, cni_fr_dec, cni_origin_defunt, certificat_deces, attestation_covid, act_deces, autorisation_prefecture, autorisation_consulaire';
@@ -630,9 +635,9 @@ async function getDefuntDataByName(lastName) {
         msg: err //!
       });
     } finally {
-      if (connection) {
-        await pool.release(connection);
-      }
+      // if (connection) {
+      //   await pool.release(connection);
+      // }
     }
   })
 }

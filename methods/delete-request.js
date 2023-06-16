@@ -1,4 +1,5 @@
 const { pool } = require('../methods/connection');
+const jwt = require("jsonwebtoken");
 // const writeToFile = require("../util/write-to-file");
 
 
@@ -18,7 +19,22 @@ module.exports = (req, res) => {
     // /^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i
   // );
 
-  if (!regexNumbers.test(id)) {
+  //autres routers
+  try{
+    //test token
+    if(
+        !req.headers.authorization ||
+        !req.headers.authorization.startsWith('Bearer') ||
+        !req.headers.authorization.split(' ')[1]
+    ){
+      return res.status(422).json({
+        message: "Please provide the token",
+      });
+    }
+    const theToken = req.headers.authorization.split(' ')[1];
+    const decoded = jwt.verify(theToken, process.env.SECRET_KEY)
+
+    if (!regexNumbers.test(id)) {
     res.writeHead(404, { "Content-Type": "application/json" });
     res.end(
       JSON.stringify({
@@ -26,44 +42,56 @@ module.exports = (req, res) => {
         error: "UUID is not valid",
       })
     );  
-  } else if (baseUrl === "/api/form/" && regexNumbers.test(id)) {
+  }
+    else if (baseUrl === "/api/form/" && regexNumbers.test(id)) {
 
-    try {
+      try {
 
-    deleteDefunt(id)
-    .then(result => {
+      deleteDefunt(id)
+      .then(result => {
 
-      res.writeHead(200, { "Content-Type": "application/json" });
-      let jsonResult = JSON.stringify({
-        "message": "Supprission du defunt avec succès",
+        res.writeHead(200, { "Content-Type": "application/json" });
+        let jsonResult = JSON.stringify({
+          "message": "Supprission du defunt avec succès",
+        });
+        res.end(jsonResult);
+      })
+      .catch(err => {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            error: "échec de la suppression du defunt",
+            // error: err.error['message'],
+          })
+        );
       });
-      res.end(jsonResult);
-    })
-    .catch(err => {
+
+
+    } catch (err) {
       res.writeHead(404, { "Content-Type": "application/json" });
       res.end(
         JSON.stringify({
-          error: "échec de la suppression du defunt",
-          // error: err.error['message'],
+          error: "échec de la suppression",
+          // message: `${err.text}`,
         })
       );
-    });
+    }
 
+    }
+    else {
+      res.writeHead(404, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ message: "Not Found", error: "Route not found" }));
+    }
 
-  } catch (err) {
-    res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(
-      JSON.stringify({
-        error: "échec de la suppression",
-        // message: `${err.text}`,
-      })
-    );
-  }
+    } catch (err) {
+      if (err instanceof jwt.TokenExpiredError) {
+        // Handle token expiration error
+        return res.status(401).send({ msg: 'Token expired. Please log in again.' });
+      }
+      // Handle other errors
+      return res.status(401).send({ msg: 'Invalid token.' });
+    } finally{}
 
-  } else {
-    res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ message: "Not Found", error: "Route not found" }));
-  }
 };
 
 

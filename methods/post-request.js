@@ -51,7 +51,51 @@ async function getLastDefuntId() {
 
 
 module.exports = async (req, res) => {
-  if (req.url === "/api/form") {
+
+  if(req.url === "/api/login"){
+
+    let jsonData = await requestToJsonparser(req);
+
+    await login(jsonData)
+        .then(result => {
+          res.writeHead(200, { "Content-Type": "application/json" });
+          let jsonResult = JSON.stringify(result);
+          res.end(jsonResult);
+        })
+        .catch(err => {
+          console.log(err)
+          res.writeHead(404 , { "Content-Type": "application/json" });
+          res.end(
+              JSON.stringify(err)
+          );
+        });
+  }
+  else if(req.url === "/api/register"){
+
+
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ message: "not created yet", error: "Route not found" }));
+
+
+  }
+
+
+  //autres routers
+  try{
+    //test token
+    if(
+        !req.headers.authorization ||
+        !req.headers.authorization.startsWith('Bearer') ||
+        !req.headers.authorization.split(' ')[1]
+    ){
+      return res.status(422).json({
+        message: "Please provide the token",
+      });
+    }
+    const theToken = req.headers.authorization.split(' ')[1];
+    const decoded = jwt.verify(theToken, process.env.SECRET_KEY)
+
+    if (req.url === "/api/form") {
     try {
 
       await getLastDefuntId()
@@ -95,40 +139,21 @@ module.exports = async (req, res) => {
         })
       );
     }
-  } else 
-  
-  if(req.url === "/api/login"){
-
-    let jsonData = await requestToJsonparser(req);
-
-    await login(jsonData)
-    .then(result => {
-      res.writeHead(200, { "Content-Type": "application/json" });
-      let jsonResult = JSON.stringify(result);
-      res.end(jsonResult);
-    })
-    .catch(err => {
-      console.log(err)
-      res.writeHead(404 , { "Content-Type": "application/json" });
-      res.end(
-        JSON.stringify(err)                 
-      );
-    });
-
-
-
-  } else if(req.url === "/api/register"){
-  
-
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ message: "not created yet", error: "Route not found" }));
-
-
   }
-  else  {
+    else  {
     res.writeHead(404, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ message: "Not Found", error: "Route not found" }));
   }
+
+  } catch (err) {
+    if (err instanceof jwt.TokenExpiredError) {
+      // Handle token expiration error
+      return res.status(401).send({ msg: 'Token expired. Please log in again.' });
+    }
+    // Handle other errors
+    return res.status(401).send({ msg: 'Invalid token.' });
+  } finally{}
+
 };
 
 

@@ -3,6 +3,7 @@ const { pool } = require('../methods/connection');
 require('dotenv').config();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const saveLogs = require('../util/logger');
 
 
 
@@ -47,6 +48,7 @@ async function getLastDefuntId() {
         }
       }
     } catch (err) {
+      saveLogs(`Error 51 - put - getLastDefuntId :  ${err}`);
       reject({
         error: 'Error-retrieving-database',
         // error: err,
@@ -78,6 +80,8 @@ module.exports = async (req, res) => {
       res.end(jsonResult);
     })
     .catch(err => {
+      saveLogs(`Error 83 - put - login :  ${err}`);
+
       console.log(err)
       res.writeHead(404 , { "Content-Type": "application/json" });
       res.end(
@@ -85,81 +89,114 @@ module.exports = async (req, res) => {
       );
     });
 
-  } else
-  if (!regexNumbers.test(id)) {
-    res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(
-      JSON.stringify({
-        // title: "Échec de la validation",
-        error: "L'UUID n'est pas valide",
-      })
-    );
-  } else if (baseUrl === "/api/form/" && regexNumbers.test(id)) {
-    try {
-      let jsonData = await requestToJsonparser(req);  
+  }
 
-      if(id === '0') {
-        await getLastDefuntId()
-        .then(id => {
-          indexId = parseInt(id)+1;
-        })
-        .catch(err => {
-          console.log(err);
-          indexId =  parseInt(getRandomInteger()) ;
-        });
+  //autres routers
+  try{
+    //test token
+    if(
+        !req.headers.authorization ||
+        !req.headers.authorization.startsWith('Bearer') ||
+        !req.headers.authorization.split(' ')[1]
+    ){
+      return res.status(422).json({
+        message: "Please provide the token",
+      });
+    }
+    const theToken = req.headers.authorization.split(' ')[1];
+    const decoded = jwt.verify(theToken, process.env.SECRET_KEY)
 
-        await insertNewDefunt(jsonData)
-        .then(result => {
-         
-          res.writeHead(200, { "Content-Type": "application/json" });
-          let jsonResult = JSON.stringify({
-            "message": "insertion-successful",
-            "id": indexId,
-          });
-          res.end(jsonResult);
-        })
-        .catch(err => {
-          console.log(err)
-          res.writeHead(404 , { "Content-Type": "application/json" });
-          res.end(
-            JSON.stringify(err)                 
-          );
-        });
-
-
-
-      }else{
-        await updateIntoDefunt(jsonData,id)
-        .then(result => {
-          res.writeHead(200, { "Content-Type": "application/json" });
-          let jsonResult = JSON.stringify({
-            "message": "update-successful",
-            // "message": result
-          });
-          res.end(jsonResult);
-        })
-        .catch(err => {
-          res.writeHead(404, { "Content-Type": "application/json" });
-          res.end(
-            JSON.stringify(err)                 
-          );
-        });
-      }
-    
-
-    } catch (err) {
-      console.log(err);
+    if (!regexNumbers.test(id)) {
       res.writeHead(404, { "Content-Type": "application/json" });
       res.end(
         JSON.stringify({
-          error: "Request Json is not valid : "+err,
+          // title: "Échec de la validation",
+          error: "L'UUID n'est pas valide",
         })
       );
     }
-  } else {
-    res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ message: "Not Found", error: "Route not found" }));
+    else if (baseUrl === "/api/form/" && regexNumbers.test(id)) {
+      try {
+        let jsonData = await requestToJsonparser(req);
+
+        if(id === '0') {
+          await getLastDefuntId()
+          .then(id => {
+            indexId = parseInt(id)+1;
+          })
+          .catch(err => {
+            saveLogs(`Error 128 - put - getLastDefuntId :  ${err}`);
+            console.log(err);
+            indexId =  parseInt(getRandomInteger()) ;
+          });
+
+          await insertNewDefunt(jsonData)
+          .then(result => {
+
+            res.writeHead(200, { "Content-Type": "application/json" });
+            let jsonResult = JSON.stringify({
+              "message": "insertion-successful",
+              "id": indexId,
+            });
+            res.end(jsonResult);
+          })
+          .catch(err => {
+            saveLogs(`Error 51 - put - insertNewDefunt :  ${err}`);
+            console.log(err)
+            res.writeHead(404 , { "Content-Type": "application/json" });
+            res.end(
+              JSON.stringify(err)
+            );
+          });
+
+
+
+        }else{
+          await updateIntoDefunt(jsonData,id)
+          .then(result => {
+            res.writeHead(200, { "Content-Type": "application/json" });
+            let jsonResult = JSON.stringify({
+              "message": "update-successful",
+              // "message": result
+            });
+            res.end(jsonResult);
+          })
+          .catch(err => {
+            saveLogs(`Error 51 - put - updateIntoDefunt :  ${err}`);
+
+            res.writeHead(404, { "Content-Type": "application/json" });
+            res.end(
+              JSON.stringify(err)
+            );
+          });
+        }
+
+
+      } catch (err) {
+        console.log(err);
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            error: "Request Json is not valid : "+err,
+          })
+        );
+      }
+    }
+    else {
+      res.writeHead(404, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ message: "Not Found", error: "Route not found" }));
+    }
+
+
+  } catch (err) {
+  if (err instanceof jwt.TokenExpiredError) {
+    // Handle token expiration error
+    return res.status(401).send({ msg: 'Token expired. Please log in again.' });
   }
+  // Handle other errors
+  // return res.status(401).send({ msg: 'Invalid token.' });
+} finally{}
+
 };
 
 
