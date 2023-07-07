@@ -19,6 +19,11 @@ module.exports = async (request,defuntID) => {
         defuntProfession: rows[0]['defuntProfession'] ?? null,
         defuntNombreEnfants: rows[0]['defuntNombreEnfants'] ?? null,
         created_at: rows[0]['created_at'] ?? null,
+
+        numeroDossier: rows[0]['numeroDossier'] ?? null,
+        numeroAssurance: rows[0]['numeroAssurance'] ?? null,
+
+
       };
 
       const decisionnaire = {
@@ -72,7 +77,6 @@ module.exports = async (request,defuntID) => {
         decesDepartementDeces: rows[0]['decesDepartementDeces'] ?? null
       };
 
-
       const mise_en_biere = {
         numeroDefunt: parseInt(defuntID, 10) ?? null,
         miseEnBiereLieu: rows[0]['miseEnBiereLieu'] ?? null,
@@ -98,7 +102,6 @@ module.exports = async (request,defuntID) => {
         miseEnBiereMembreFamilleAdress: rows[0]['miseEnBiereMembreFamilleAdress'] ?? null
       };
 
-
       const situation_familiale = {
         numeroDefunt: parseInt(defuntID, 10) ?? null,
         situationFamiliale: rows[0]['situationFamiliale'] ?? null,
@@ -107,8 +110,6 @@ module.exports = async (request,defuntID) => {
         situationFamilialeNomDivorce: rows[0]['situationFamilialeNomDivorce'] ?? null,
         situationFamilialeNomPacse: rows[0]['situationFamilialeNomPacse'] ?? null
       };
-
-
 
       const cimetiere = {
         numeroDefunt: parseInt(defuntID, 10) ?? null,
@@ -132,7 +133,6 @@ module.exports = async (request,defuntID) => {
         dureeDeConcession: rows[0]['dureeDeConcession'] ?? null,
         numeroDeConcession: rows[0]['numeroDeConcession'] ?? null
       };
-
 
       const rapatriement = {
         numeroDefunt: parseInt(defuntID, 10) ?? null,

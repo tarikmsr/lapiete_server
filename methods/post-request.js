@@ -71,11 +71,8 @@ module.exports = async (req, res) => {
         });
   }
   else if(req.url === "/api/register"){
-
-
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ message: "not created yet", error: "Route not found" }));
-
 
   }
 

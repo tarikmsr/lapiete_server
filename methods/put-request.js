@@ -259,13 +259,9 @@ async function updateIntoDefunt(jsonData,id) {
           updateQuery = updateQuery.slice(0, -2) + " WHERE numerodefunt = "+id;   
 
           try{
-            // const [rows, fields] = await connection.execute(updateQuery,values);
-
-            console.log("\n--------------------------------220-------------------------------------");
-            console.log(table);23
-            console.log("222--updateQuery");
-            console.log(updateQuery);
-
+            // console.log("\n--------------------------------220-------------------------------------");
+            // console.log(table);
+            // console.log(updateQuery);
             const stmt = await connection.prepare(updateQuery);
 
             if (tableName === 'generated_documents' || tableName === 'uploaded_documents') {
@@ -292,8 +288,6 @@ async function updateIntoDefunt(jsonData,id) {
             // console.log(values);
             // console.log("---------------------------------------------------------------------\n");
 
-
-
           const [rows, fields] = await stmt.execute(values);
             result = rows;
   
@@ -304,16 +298,11 @@ async function updateIntoDefunt(jsonData,id) {
               // error: err
             });
           }
-          resolve(result); //status 200
-
-
-
-
-
+          resolve(result);
           
         } else {
 
-          let query = "INSERT INTO "+tableName+" ( numeroDefunt,"; //numeroDefunt, but what if the id n'exist pas //need to create defubnt first
+          let query = "INSERT INTO "+tableName+" ( numeroDefunt,";
           let values = [id]; //[];
           for (let i = 1; i < tableFields.length; i++) {
             query += `${tableFields[i]}, `;
@@ -325,9 +314,6 @@ async function updateIntoDefunt(jsonData,id) {
           }
           query = query.slice(0, -2) + `)`;
 
-
-
-          // const [rows, fields] = await connection.execute(query,values);
           const stmt = await connection.prepare(query);
 
           if (tableName === 'generated_documents' || tableName === 'uploaded_documents') {
@@ -337,8 +323,8 @@ async function updateIntoDefunt(jsonData,id) {
                 values[i] = byteValue;
               } 
             }
-          } 
-        const [rows, fields] = await stmt.execute(values);
+          }
+        const [rows, fields] =  await stmt.execute(values);
   
         result = rows;
         resolve(result); //add status 201
@@ -494,7 +480,6 @@ async function insertNewDefunt(jsonData) {
 });
 
 }
-
 
 
 async function login(jsonData) {

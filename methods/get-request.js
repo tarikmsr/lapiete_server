@@ -83,170 +83,165 @@ module.exports = async (req, res) => {
     const theToken = req.headers.authorization.split(' ')[1];
     const decoded = jwt.verify(theToken, process.env.SECRET_KEY)
 
-  if (req.url === "/api/user" ) {
-    //email +password ?
-    await getUserData(decoded.id)
-        .then(data => {
-          res.writeHead(200, { "Content-Type": "application/json" });
-          let jsonResult = JSON.stringify(data);
-          // console.log(jsonResult)
-          res.end(jsonResult);
-        })
-        .catch(err => {
-          res.writeHead(404, { "Content-Type": "application/json" });
-          res.end(
-              JSON.stringify(err)
-          );
-        });
-  }
-  else if (!regexNumbers.test(id) && !regexLetters.test(id)) {
-    res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(
-        JSON.stringify({
-          error: "Échec de la validation",
-          message: "L'UUID n'est pas valide ou l'itinéraire n'a pas été trouvé",
-        })
-    );
-  }
-  else if (req.url === "/api/form") {
-    await getAllDefuntsData()
-        .then(data => {
-          res.writeHead(200, { "Content-Type": "application/json" });
-          let jsonResult = JSON.stringify(data);
-          res.end(jsonResult);
-        })
-        .catch(err => {
-          res.writeHead(404, { "Content-Type": "application/json" });
-          res.end(
-              JSON.stringify({
-                title: "Impossible d'obtenir les données des utilisateurs",
-                error: err.error['message'],
-              })
-          );
-        });
-  }
-  else if (baseUrl === "/api/form/docs/" && regexNumbers.test(req.url.split("?")[0].split("/")[4]) ) {
+    if (req.url === "/api/user" ) {
+      //email +password ?
+      await getUserData(decoded.id)
+          .then(data => {
+            res.writeHead(200, { "Content-Type": "application/json" });
+            let jsonResult = JSON.stringify(data);
+            // console.log(jsonResult)
+            res.end(jsonResult);
+          })
+          .catch(err => {
+            res.writeHead(404, { "Content-Type": "application/json" });
+            res.end(
+                JSON.stringify(err)
+            );
+          });
+    }
+    else if (!regexNumbers.test(id) && !regexLetters.test(id)) {
+      res.writeHead(404, { "Content-Type": "application/json" });
+      res.end(
+          JSON.stringify({
+            error: "Échec de la validation",
+            message: "L'UUID n'est pas valide ou l'itinéraire n'a pas été trouvé",
+          })
+      );
+    }
+    else if (req.url === "/api/form") {
+      await getAllDefuntsData()
+          .then(data => {
+            res.writeHead(200, { "Content-Type": "application/json" });
+            let jsonResult = JSON.stringify(data);
+            res.end(jsonResult);
+          })
+          .catch(err => {
+            res.writeHead(404, { "Content-Type": "application/json" });
+            res.end(
+                JSON.stringify({
+                  title: "Impossible d'obtenir les données des utilisateurs",
+                  error: err.error['message'],
+                })
+            );
+          });
+    }
+    else if (baseUrl === "/api/form/docs/" && regexNumbers.test(req.url.split("?")[0].split("/")[4]) ) {
 
-    let id = req.url.split("?")[0].split("/")[4];
-    const { fileName } = req.query;
-    await getOneDefuntUploadedDataById(id,fileName) //cni_fr_defunt
-        .then(data => {
+      let id = req.url.split("?")[0].split("/")[4];
+      const { fileName } = req.query;
+      await getOneDefuntUploadedDataById(id,fileName) //cni_fr_defunt
+          .then(data => {
 
-          const file_name = `${fileName}`;//${fileName}_${id}.bin
-          res.setHeader('Content-Type', 'application/octet-stream');
-          res.setHeader('Content-Disposition', `attachment; filename="${file_name}"`);
-          res.send(data);
+            const file_name = `${fileName}`;//${fileName}_${id}.bin
+            res.setHeader('Content-Type', 'application/octet-stream');
+            res.setHeader('Content-Disposition', `attachment; filename="${file_name}"`);
+            res.send(data);
 
-        })
-        .catch(err => {
-          console.log(err)
+          })
+          .catch(err => {
+            console.log(err)
 
-          res.writeHead(404, { "Content-Type": "application/json" });
-          res.end(
-              JSON.stringify(err)
-          );
-        });
-
-
-
-  }
-  else if (baseUrl === "/api/form/" && regexNumbers.test(id)) {
-
-    //check token
-    console.log(150);
-    console.log("params",req.params,'\n');
-    console.log("authorization:",req.headers.authorization); //test it remove Bearer
+            res.writeHead(404, { "Content-Type": "application/json" });
+            res.end(
+                JSON.stringify(err)
+            );
+          });
 
 
-    await getOneDefuntDataById(id)
-        .then(data => {
-          res.writeHead(200, { "Content-Type": "application/json" });
-          let jsonResult = JSON.stringify(data);
-          res.end(jsonResult);
-        })
-        .catch(err => {
-          console.log(err)
 
-          res.writeHead(404, { "Content-Type": "application/json" });
-          res.end(
-              JSON.stringify(err)
-          );
-        });
+    }
+    else if (baseUrl === "/api/form/" && regexNumbers.test(id)) {
 
-  }
-  else if (baseUrl === "/api/form/download/" && regexNumbers.test(req.url.split("?")[0].split("/")[4]) ) {
+      await getOneDefuntDataById(id)
+          .then(data => {
+            res.writeHead(200, { "Content-Type": "application/json" });
+            let jsonResult = JSON.stringify(data);
+            res.end(jsonResult);
+          })
+          .catch(err => {
+            console.log(err)
 
-    const defuntId = req.url.split("?")[0].split("/")[4];
-    const { index } = req.query; //from parametre
+            res.writeHead(404, { "Content-Type": "application/json" });
+            res.end(
+                JSON.stringify(err)
+            );
+          });
+    }
+    else if (baseUrl === "/api/form/download/" && regexNumbers.test(req.url.split("?")[0].split("/")[4]) ) {
 
-    await getGeneratedFolderFileById(defuntId,index)
-        .then(async filePDFPath => {
+      const defuntId = req.url.split("?")[0].split("/")[4];
+      const { index } = req.query; //from parametre
 
-          //// pdfkit  ////
-          //   const chunks = [];
-          //   pdfDoc.on('data', chunk => {
-          // chunks.push(chunk);
-          // });
-          //
-          // pdfDoc.on('end', () => {
-          //   const buffer = Buffer.concat(chunks);
-          //   res.setHeader('Content-Type', 'application/octet-stream');
-          //   res.setHeader('Content-Disposition', `attachment; filename="${pdfDoc.info.Title}.pdf"`);
-          //   res.end(buffer);
-          // });
-          // //
-          // pdfDoc.end();
+      await getGeneratedFolderFileById(defuntId,index)
+          .then(async filePDFPath => {
 
-
-          ///// receive : filePDFPath
-          const fileName = filePDFPath.split('/').pop();
-          res.setHeader('Content-Type', 'application/octet-stream');
-          res.setHeader('Content-Disposition', `attachment; filename=${fileName}`); //${pdfDoc.Title}
-          const fileStream = fs.createReadStream(filePDFPath.toString());
-          fileStream.pipe(res);
-
-          await sleep(1000); //wait until transfert
+            //// pdfkit  ////
+            //   const chunks = [];
+            //   pdfDoc.on('data', chunk => {
+            // chunks.push(chunk);
+            // });
+            //
+            // pdfDoc.on('end', () => {
+            //   const buffer = Buffer.concat(chunks);
+            //   res.setHeader('Content-Type', 'application/octet-stream');
+            //   res.setHeader('Content-Disposition', `attachment; filename="${pdfDoc.info.Title}.pdf"`);
+            //   res.end(buffer);
+            // });
+            // //
+            // pdfDoc.end();
 
 
-          console.log("filePDFPath : ", filePDFPath);
-          fs.unlinkSync(filePDFPath);
-          console.log("--- end ---");
+            ///// receive : filePDFPath
+            const fileName = filePDFPath.split('/').pop();
+            const fileStream = fs.createReadStream(filePDFPath.toString());
+            const stat = fs.statSync(filePDFPath);
+            const fileSize = stat.size;
+
+            res.setHeader('Content-Type', 'application/octet-stream');
+            res.setHeader('Content-Disposition', `attachment; filename=${fileName}`); //${pdfDoc.Title}
+            res.setHeader('Content-Length', fileSize);
+            fileStream.pipe(res);
+            await sleep(1000); //wait until transfert
 
 
-        })
-        .catch(err => {
-          console.log(err)
-          res.writeHead(404, { "Content-Type": "application/json" });
-          res.end(
-              JSON.stringify(err)
-          );
-        });
-
-  }
-  else if (baseUrl === "/api/form/" && regexLetters.test(id)) {
-
-    await getDefuntDataByName(id)
-        .then(data => {
-          res.writeHead(200, { "Content-Type": "application/json" });
-          let jsonResult = JSON.stringify(data);
-          res.end(jsonResult);
-        })
-        .catch(err => {
-          console.log(err)
-
-          res.writeHead(404, { "Content-Type": "application/json" });
-          res.end(
-              JSON.stringify(err)
-          );
-        });
+            console.log("filePDFPath : ", filePDFPath);
+            fs.unlinkSync(filePDFPath);
+            console.log("--- end ---");
 
 
-  }
-  else {
-    res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ message: "Not Found", error: "Route not found" }));
-  }
+          })
+          .catch(err => {
+            console.log(err)
+            res.writeHead(404, { "Content-Type": "application/json" });
+            res.end(
+                JSON.stringify(err)
+            );
+          });
 
+    }
+    else if (baseUrl === "/api/form/" && regexLetters.test(id)) {
+
+      await getDefuntDataByName(id)
+          .then(data => {
+            res.writeHead(200, { "Content-Type": "application/json" });
+            let jsonResult = JSON.stringify(data);
+            res.end(jsonResult);
+          })
+          .catch(err => {
+            console.log(err)
+
+            res.writeHead(404, { "Content-Type": "application/json" });
+            res.end(
+                JSON.stringify(err)
+            );
+          });
+
+
+    }
+    else {
+      res.writeHead(404, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ message: "Not Found", error: "Route not found" }));
+    }
 
   }
   catch (err) {
@@ -393,7 +388,7 @@ function getFilesNameByIndex(index){
         filesName = ',pouvoir, cni_fr_dec, cni_fr_defunt, act_naissance, declaration_deces, tm_apres_mb';
         break;
       case '9'://22://Cimetiere inh
-        filesName = ',pouvoir, cni_fr_dec, certificat_deces, act_deces, fermeture_cercueil, achat_concession, bon_travaux'; //if achat_concession, bon_travaux null check achat_de_concession, bon_de_travaux in generated
+        filesName = ',pouvoir, cni_fr_dec, certificat_deces, act_deces, fermeture_cercueil, achat_concession, demande_inhumation, bon_travaux'; //if achat_concession, bon_travaux null check achat_de_concession, bon_de_travaux in generated
         break;
       case '10'://23://Deroulement inh
         filesName = ',deroulement_inh';
@@ -551,12 +546,18 @@ async function getOneDefuntDataById(numeroDefunt){
       WHERE d.numeroDefunt = ${numeroDefunt}`;
 
       const [rows, fields] = await connection.execute(query);
-      let jsonData = await jsonP(rows,numeroDefunt);
-
+      let jsonData;
+      if(rows.length > 0){
+        jsonData = await jsonP(rows,numeroDefunt);
+      }
+      else
+      {
+        jsonData = {};
+      }
       resolve(jsonData);
 
     } catch (err) {
-      saveLogs(`Error 550 - getOneDefuntDataById :  ${err}`);
+      saveLogs(`Error 572 - getOneDefuntDataById :  ${err}`);
 
       if (connection) await connection.rollback();
       console.log(err);
@@ -599,21 +600,26 @@ async function getDefuntDataByName(lastName) {
       if(rows.length == 1){
 
         var id = rows[0]['numeroDefunt'];
-        if (connection) { //end the first
-          console.log("350-- search byName realise connection----");
-          saveLogs(`Note 606 - getDefuntDataByName connectection closed `);
 
-          await pool.clear();//connection
-          await pool.release(connection);
-        }
+        // if (connection) { //end the first
+        //   console.log("350-- search byName realise connection----");
+        //   saveLogs(`Note 606 - getDefuntDataByName connectection closed `);
+        //   await pool.clear();//connection
+        //   await pool.release(connection);
+        // }
+
+        // release the connection before getting data by ID
+        await pool.release(connection);
+          saveLogs(`Note 619 - getDefuntDataByName connection released `);
 
         await getOneDefuntDataById(id)
             .then(data => {
-              console.log("------",data);
+              console.log(`------: ${data[`defunt`]}.....etc`);
+              saveLogs(`Note 624 - getDefuntDataByID ${data[`defunt`]}`);
               resolve(data);
             })
             .catch(err => {
-              saveLogs(`Error 617 - getDefuntDataByName :  ${err}`);
+              saveLogs(`Error 619 - getDefuntDataByName :  ${err}`);
               console.log(err)
               reject({
                 error:'Error-retrieving-database',
@@ -622,19 +628,21 @@ async function getDefuntDataByName(lastName) {
 
             });
       }else{
+        // release the connection if not getting data by ID
+        await pool.release(connection);
         resolve(rows);
       }
 
     } catch (err) {
-      saveLogs(`Error 562 - getOneDefuntDataById :  ${err}`);
-      //   if (connection) await connection.rollback();
-      if (connection) await connection.release(connection);
-      console.log(err);
+      saveLogs(`Error 643 - getDefuntDataByName :  ${err}`);
+      console.log(`Error 644 : ${err}`);
       reject({
         error:'Error-retrieving-database',
         msg: err //!
       });
-    } finally {
+
+    }
+    finally {
       // if (connection) {
       //   await pool.release(connection);
       // }
@@ -669,12 +677,12 @@ async function getUserData(id) {
       }
 
     } catch (err) {
-      saveLogs(`Error 680 - getUserData :  ${err}`);
+      saveLogs(`Error 680 - getUserData  ${id}:  ${err}`);
 
       console.log(err);
       reject({
         error:'Error-retrieving-database',
-        msg: err
+        msg: 'getUserData ${err}'
       });
     }
   })

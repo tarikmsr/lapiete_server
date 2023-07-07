@@ -1,0 +1,21 @@
+[2023-06-20 17:41:24] Error 83 - put - login :  [object Object]
+[2023-06-20 17:42:16] Error 83 - put - login :  [object Object]
+[2023-07-05 10:41:16] Note 606 - getDefuntDataByName connectection closed 
+[2023-07-05 10:47:45] Note 606 - getDefuntDataByName connectection closed 
+[2023-07-05 10:48:59] Note 606 - getDefuntDataByName connectection closed 
+[2023-07-05 10:59:23] Note 619 - getDefuntDataByName connection released 
+[2023-07-05 10:59:23] Note 624 - getDefuntDataByID [object Object]
+[2023-07-05 11:00:04] Note 619 - getDefuntDataByName connection released 
+[2023-07-05 11:00:04] Note 624 - getDefuntDataByID [object Object]
+[2023-07-05 11:00:28] Note 619 - getDefuntDataByName connection released 
+[2023-07-05 11:00:28] Note 624 - getDefuntDataByID [object Object]
+[2023-07-05 11:19:35] JsonP error : TypeError: Cannot read properties of undefined (reading 'defuntCivilite')
+[2023-07-05 11:19:35] Error 562 - getOneDefuntDataById :  TypeError: Cannot read properties of undefined (reading 'defuntCivilite')
+[2023-07-05 11:23:16] JsonP error : TypeError: Cannot read properties of undefined (reading 'defuntCivilite')
+[2023-07-05 11:23:16] Error 562 - getOneDefuntDataById :  TypeError: Cannot read properties of undefined (reading 'defuntCivilite')
+[2023-07-05 11:23:49] JsonP error : TypeError: Cannot read properties of undefined (reading 'defuntCivilite')
+[2023-07-05 11:23:49] Error 562 - getOneDefuntDataById :  TypeError: Cannot read properties of undefined (reading 'defuntCivilite')
+[2023-07-05 11:24:47] JsonP error : TypeError: Cannot read properties of undefined (reading 'defuntCivilite')
+[2023-07-05 11:24:47] Error 562 - getOneDefuntDataById :  TypeError: Cannot read properties of undefined (reading 'defuntCivilite')
+[2023-07-05 11:25:01] JsonP error : TypeError: Cannot read properties of undefined (reading 'defuntCivilite')
+[2023-07-05 11:25:01] Error 562 - getOneDefuntDataById :  TypeError: Cannot read properties of undefined (reading 'defuntCivilite')
