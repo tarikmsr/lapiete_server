@@ -4,6 +4,7 @@ const {  loginValidation } = require('../util/validation');
 const { validationResult } = require('express-validator');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const saveLogs = require("../util/logger");
 require('dotenv').config();
 
 let indexId = 1;
@@ -33,8 +34,13 @@ async function getLastDefuntId() {
       try {
         const [rows, fields] = await connection.execute(query);
 
-        const paddedNumber = (rows[0].numeroDefunt).toString().padStart(11, "0");
-        resolve(paddedNumber);
+        if(rows[0] != null){
+          const paddedNumber = (rows[0].numeroDefunt).toString().padStart(11, "0");
+          resolve(paddedNumber);
+        }else{
+          const paddedNumber = 0;
+          resolve(paddedNumber);
+        }
       } finally {
         if (connection) {
           await pool.release(connection);
@@ -51,61 +57,17 @@ async function getLastDefuntId() {
 
 
 module.exports = async (req, res) => {
-  if (req.url === "/api/form") {
-    try {
 
-      await getLastDefuntId()
-      .then(id => {
-        indexId = parseInt(id)+1;
-      })
-      .catch(err => {
-        console.log(err);
-        indexId =  parseInt(getRandomInteger()) ;
-      });
-
-
-      let jsonData = await requestToJsonparser(req);
-      await insertNewDefunt(jsonData)
-      .then(result => {
-        console.log(result)
-
-        res.writeHead(200, { "Content-Type": "application/json" });
-        let jsonResult = JSON.stringify({
-          "message": "insertion-successful",
-          "id": indexId
-        });
-        console.log(jsonResult)
-        res.end(jsonResult);
-      })
-      .catch(err => {
-        console.log(err)
-        res.writeHead(404 , { "Content-Type": "application/json" });
-        res.end(
-          JSON.stringify(err)                 
-        );
-      });
-
-    } catch (err) {
-      console.log(err)
-      res.writeHead(404, { "Content-Type": "application/json" });
-      res.end(
-        JSON.stringify({
-          error: "Échec de l'insertion",
-          // message: `${err.text}`,
-        })
-      );
-    }
-  } else 
-  
   if(req.url === "/api/login"){
-
     let jsonData = await requestToJsonparser(req);
 
     await login(jsonData)
     .then(result => {
-      res.writeHead(200, { "Content-Type": "application/json" });
       let jsonResult = JSON.stringify(result);
+      res.writeHead(200, { "Content-Type": "application/json" });
       res.end(jsonResult);
+      saveLogs(`Success: login for user : ${jsonData['email']}`)
+
     })
     .catch(err => {
       console.log(err)
@@ -117,7 +79,8 @@ module.exports = async (req, res) => {
 
 
 
-  } else if(req.url === "/api/register"){
+  }
+  else if(req.url === "/api/register"){
   
 
     res.writeHead(200, { "Content-Type": "application/json" });
@@ -125,10 +88,85 @@ module.exports = async (req, res) => {
 
 
   }
-  else  {
-    res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ message: "Not Found", error: "Route not found" }));
+  else {
+
+    //autres routers
+    try {
+      //test token
+      if (
+          !req.headers.authorization ||
+          !req.headers.authorization.startsWith("Bearer") ||
+          !req.headers.authorization.split(" ")[1]
+      ) {
+        return res.status(422).json({
+          message: "Please provide the token",
+        });
+      }
+      const theToken = req.headers.authorization.split(" ")[1];
+      const decoded = jwt.verify(theToken, process.env.SECRET_KEY);
+
+    if (req.url === "/api/form") {
+      try {
+        await getLastDefuntId()
+            .then(id => {
+              indexId = parseInt(id)+1;
+            })
+            .catch(err => {
+              console.log(err);
+            });
+
+
+        let jsonData = await requestToJsonparser(req);
+        await insertNewDefunt(jsonData)
+            .then(result => {
+              console.log(result)
+              let jsonResult = JSON.stringify({
+                "message": "insertion-successful",
+                "id": indexId
+              });
+              console.log(jsonResult)
+              res.writeHead(200, { "Content-Type": "application/json" });
+              res.end(jsonResult);
+              saveLogs(`Success: insert new defunt id :${indexId} by user :${decoded.id}`);
+            })
+            .catch(err => {
+              console.log(err)
+              res.writeHead(404 , { "Content-Type": "application/json" });
+              res.end(
+                  JSON.stringify(err)
+              );
+            });
+
+      } catch (err) {
+        console.log(err)
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(
+            JSON.stringify({
+              error: "Échec de l'insertion",
+              // message: `${err.text}`,
+            })
+        );
+      }
+    }
+    else {
+      res.writeHead(404, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ message: "Not Found", error: "Route not found" }));
+    }
+
+    } catch (err) {
+      if (err instanceof jwt.TokenExpiredError) {
+        return res.status(401)
+            .send({ msg: "Token expired. Please log in again." });
+      }
+    }
+    finally {
+    }
   }
+
+
+
+
+
 };
 
 
@@ -209,7 +247,12 @@ async function insertNewDefunt(jsonData) {
             if (values[i]) { // Only set if value is not null
               const byteValue = Buffer.from(values[i], 'base64');
               values[i] = byteValue;
-            } 
+            } else {
+              // const byteValue = Buffer.from('[]', 'base64');
+              const byteValue= null;
+
+              values[i] = byteValue;
+            }
           }
         } 
       const [result, fields] = await stmt.execute(values);

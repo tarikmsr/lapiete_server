@@ -3,26 +3,32 @@ const jsonP = require('../util/tojson-parser');
 const { PDFDocument } = require('pdf-lib');
 const fs = require("fs");
 const saveLogs = require('../util/logger');
+const jwt = require("jsonwebtoken");
 
+const tablesName = [
+  "defunt",
+  "decisionnaire",
+  "filiation",
+  "situation_familiale",
+  "deces",
+  "mise_en_biere",
+  "cimetiere",
+  "concession",
+  "rapatriement",
+  "vol",
 
-const tablesName =[
-  'defunt',
-  'decisionnaire',
-  'filiation',
-  'situation_familiale',
-  'deces',
-  'mise_en_biere',
-  'cimetiere',
-  'concession',
-  'rapatriement',
-  'vol',
-
-  'uploaded_documents',
-  'generated_documents'
+  "uploaded_documents",
+  "generated_documents",
 ];
 
 
-function getFileExtension(file) { //Uint8List file
+/**
+ // * @param {Uint8List} file - The ID of the defunt to retrieve.
+ * @returns {String} A String that resolves to an object containing the
+ * retrieved data, with keys for each table name and values for the corresponding
+ * row data.
+ */
+function getFileExtension(file) {
   if (file.length < 12) {
     return 'null';
   }
@@ -71,183 +77,183 @@ module.exports = async (req, res) => {
   const regexNumbers = /^[0-9]+$/;
   const regexLetters = /^[a-zA-Z0-9_-\u00C0-\u017F%]+$/;
 
-  if (req.url === "/api/user" ) {  //&& regexNumbers.test(id)
-
-    const id = 1;
-    //email +password ?
-    await getUserData(id)
-        .then(data => {
-          res.writeHead(200, { "Content-Type": "application/json" });
-          let jsonResult = JSON.stringify(data);
-          // console.log(jsonResult)
-          res.end(jsonResult);
-        })
-        .catch(err => {
-          res.writeHead(404, { "Content-Type": "application/json" });
-          res.end(
-              JSON.stringify(err)
-          );
-        });
+  try {
+    //test token
+    if (
+        !req.headers.authorization ||
+        !req.headers.authorization.startsWith("Bearer") ||
+        !req.headers.authorization.split(" ")[1]
+    ) {
+      return res.status(422).json({
+        message: "Please provide a valid token",
+      });
+    }
+    const theToken = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(theToken, process.env.SECRET_KEY);
 
 
+    if (req.url === "/api/user/" && regexNumbers.test(id)) {
 
-  } else if (req.url === "/api/form") {
+      let userId =  decoded.id;
+      await getUserData(userId)
+          .then(data => {
+            let jsonResult = JSON.stringify(data);
+            // console.log(jsonResult)
+            res.writeHead(200, {"Content-Type": "application/json"});
+            res.end(jsonResult);
+          })
+          .catch(err => {
+            res.writeHead(404, {"Content-Type": "application/json"});
+            res.end(
+                JSON.stringify(err)
+            );
+          });
+    }
+    else if (req.url === "/api/form") {
 
-    await getAllDefuntsData()
-        .then(data => {
-          res.writeHead(200, { "Content-Type": "application/json" });
-          let jsonResult = JSON.stringify(data);
-          res.end(jsonResult);
-        })
-        .catch(err => {
-          res.writeHead(404, { "Content-Type": "application/json" });
-          res.end(
-              JSON.stringify({
-                title: "Impossible d'obtenir les données des utilisateurs",
-                error: err.error['message'],
-              })
-          );
-        });
-
-
-  }
-  else if (!regexNumbers.test(id) && !regexLetters.test(id)) {
-
-    res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(
-        JSON.stringify({
-          error: "Échec de la validation",
-          message: "L'UUID n'est pas valide ou l'itinéraire n'a pas été trouvé",
-        })
-    );
-  }
-  else if (baseUrl === "/api/form/docs/" && regexNumbers.test(req.url.split("?")[0].split("/")[4]) ) {
-
-    let id = req.url.split("?")[0].split("/")[4];
-    const { fileName } = req.query;
-    await getOneDefuntUploadedDataById(id,fileName) //cni_fr_defunt
-        .then(data => {
-
-          const file_name = `${fileName}`;//${fileName}_${id}.bin
-          res.setHeader('Content-Type', 'application/octet-stream');
-          res.setHeader('Content-Disposition', `attachment; filename="${file_name}"`);
-          res.send(data);
-
-        })
-        .catch(err => {
-          console.log(err)
-
-          res.writeHead(404, { "Content-Type": "application/json" });
-          res.end(
-              JSON.stringify(err)
-          );
-        });
+      await getAllDefuntsData()
+          .then(data => {
+            let jsonResult = JSON.stringify(data);
+            res.writeHead(200, {"Content-Type": "application/json"});
+            res.end(jsonResult);
+          })
+          .catch(err => {
+            res.writeHead(404, {"Content-Type": "application/json"});
+            res.end(
+                JSON.stringify({
+                  title: "Impossible d'obtenir les données des utilisateurs",
+                  error: err.error['message'],
+                })
+            );
+          });
 
 
+    }
+    else if (!regexNumbers.test(id) && !regexLetters.test(id)) {
 
-  }
-  else if (baseUrl === "/api/form/" && regexNumbers.test(id)) {
+      res.writeHead(404, {"Content-Type": "application/json"});
+      res.end(
+          JSON.stringify({
+            error: "Échec de la validation",
+            message: "L'UUID n'est pas valide ou l'itinéraire n'a pas été trouvé",
+          })
+      );
+    }
+    else if (baseUrl === "/api/form/docs/" && regexNumbers.test(req.url.split("?")[0].split("/")[4])) {
 
-    //check token
-    // console.log(92)
+      let id = req.url.split("?")[0].split("/")[4];
+      const {fileName} = req.query;
+      await getOneUploadedFileDataById(id, fileName) //cni_fr_defunt
+          .then(data => {
+            const file_name = `${fileName}`;//${fileName}_${id}.bin
+            res.setHeader('Content-Type', 'application/octet-stream');
+            res.setHeader('Content-Disposition', `attachment; filename="${file_name}"`);
+            res.send(data);
 
-    await getOneDefuntDataById(id)
-        .then(data => {
-          res.writeHead(200, { "Content-Type": "application/json" });
-          let jsonResult = JSON.stringify(data);
-          res.end(jsonResult);
-        })
-        .catch(err => {
-          console.log(err)
+          })
+          .catch(err => {
+            console.log(err)
+            res.writeHead(404, {"Content-Type": "application/json"});
+            res.end(JSON.stringify(err));
+          });
 
-          res.writeHead(404, { "Content-Type": "application/json" });
-          res.end(
-              JSON.stringify(err)
-          );
-        });
+    }
+    else if (baseUrl === "/api/form/" && regexNumbers.test(id)) {
 
-  }
-  else if (baseUrl === "/api/form/download/" && regexNumbers.test(req.url.split("?")[0].split("/")[4]) ) {
+      //check token
+      // console.log(92)
 
-    const defuntId = req.url.split("?")[0].split("/")[4];
-    const { index } = req.query; //from parametre
+      await getOneDefuntDataById(id)
+          .then(data => {
+            let jsonResult = JSON.stringify(data);
+            res.writeHead(200, {"Content-Type": "application/json"});
+            res.end(jsonResult);
+          })
+          .catch(err => {
+            console.log(err)
 
-    console.log("175-- defuntId-",defuntId);
+            res.writeHead(404, {"Content-Type": "application/json"});
+            res.end(
+                JSON.stringify(err)
+            );
+          });
 
+    }
+    else if (baseUrl === "/api/form/check_download_files/" && regexNumbers.test(req.url.split("?")[0].split("/")[4])) {
+      const defuntId = req.url.split("?")[0].split("/")[4];
+      const { index } = req.query;
 
-    await getGeneratedFolderFileById(defuntId,index)
-        .then(async filePDFPath => {
+      await checkDownloadedFilesById(defuntId, index)
+          .then((data) => {
+            let jsonResult = JSON.stringify(data);
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(jsonResult);
+          })
+          .catch((err) => {
+            console.log(err);
+            res.writeHead(404, { "Content-Type": "application/json" });
+            res.end(JSON.stringify(err));
+          });
+    }
+    else if (baseUrl === "/api/form/download/" && regexNumbers.test(req.url.split("?")[0].split("/")[4])) {
+      const defuntId = req.url.split("?")[0].split("/")[4];
+      const { index } = req.query; //from parametre
 
-          //// pdfkit  ////
-          //   const chunks = [];
-          //   pdfDoc.on('data', chunk => {
-          // chunks.push(chunk);
-          // });
-          //
-          // pdfDoc.on('end', () => {
-          //   const buffer = Buffer.concat(chunks);
-          //   res.setHeader('Content-Type', 'application/octet-stream');
-          //   res.setHeader('Content-Disposition', `attachment; filename="${pdfDoc.info.Title}.pdf"`);
-          //   res.end(buffer);
-          // });
-          // //
-          // pdfDoc.end();
+      await getGeneratedFolderFileById(defuntId, index, decoded.id)
+          .then(async (filePDFPath) => {
 
+            const fileName = filePDFPath.split("/").pop();
+            const fileStream = fs.createReadStream(filePDFPath.toString());
+            const stat = fs.statSync(filePDFPath);
+            const fileSize = stat.size;
 
-          ///// receive : filePDFPath
-          const fileName = filePDFPath.split('/').pop();
-          res.setHeader('Content-Type', 'application/octet-stream');
-          res.setHeader('Content-Disposition', `attachment; filename=${fileName}`); //${pdfDoc.Title}
-          const fileStream = fs.createReadStream(filePDFPath.toString());
-          fileStream.pipe(res);
+            res.setHeader("Content-Type", "application/octet-stream");
+            res.setHeader(
+                "Content-Disposition",
+                `attachment; filename=${fileName}`
+            );
+            res.setHeader("Content-Length", fileSize);
+            fileStream.pipe(res);
+            await sleep(1000); //wait until download done
 
-          await sleep(1000); //wait until transfert
+            fs.unlinkSync(filePDFPath);
 
+            saveLogs(`user:${decoded.id} generate folder:${index} for defunt :${defuntId}.`);
+          })
+          .catch((err) => {
+            console.log(err);
+            saveLogs(`Error get download folder ${index} - defunt ${defuntId} : ${err}`)
+            res.writeHead(404, { "Content-Type": "application/json" });
+            res.end(JSON.stringify(err));
+          });
+    }
+    else if (baseUrl === "/api/form/" && regexLetters.test(id)) {
 
-          console.log("filePDFPath : ", filePDFPath);
-          fs.unlinkSync(filePDFPath);
-          console.log("--- end ---");
+      await getDefuntDataByName(id)
+          .then(data => {
+            let jsonResult = JSON.stringify(data);
+            res.writeHead(200, {"Content-Type": "application/json"});
+            res.end(jsonResult);
+          })
+          .catch(err => {
+            console.log(err)
+            res.writeHead(404, {"Content-Type": "application/json"});
+            res.end(
+                JSON.stringify(err)
+            );
+          });
+    }
+    else {
+      res.writeHead(404, {"Content-Type": "application/json"});
+      res.end(JSON.stringify({message: "Not Found", error: "Route not found"}));
+    }
 
-
-        })
-        .catch(err => {
-          console.log(err)
-          res.writeHead(404, { "Content-Type": "application/json" });
-          res.end(
-              JSON.stringify(err)
-          );
-        });
-
-  }
-
-  else if (baseUrl === "/api/form/" && regexLetters.test(id)) {
-
-    //check token
-    // console.log("test - 118");
-    // console.log(id);
-
-
-    await getDefuntDataByName(id)
-        .then(data => {
-          res.writeHead(200, { "Content-Type": "application/json" });
-          let jsonResult = JSON.stringify(data);
-          res.end(jsonResult);
-        })
-        .catch(err => {
-          console.log(err)
-
-          res.writeHead(404, { "Content-Type": "application/json" });
-          res.end(
-              JSON.stringify(err)
-          );
-        });
-
-
-  } else
-
-  {
-    res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ message: "Not Found", error: "Route not found" }));
+  } catch (err) {
+    if (err instanceof jwt.TokenExpiredError) {
+      return res.status(401)
+          .send({ msg: "Token expired. Please log in again." });
+    }
+    return res.status(401).send({ msg: "Invalid token." });
   }
 };
 
@@ -263,7 +269,7 @@ function getAllDefuntsData() {
         const table = tablesName[i];
         const query = `SELECT * FROM ${table}`;
 
-        const [rows, fields] = await connection.execute(query);
+        const [rows] = await connection.execute(query);
 
 
         if (rows && rows.length > 0 ) {
@@ -297,7 +303,7 @@ function getAllDefuntsData() {
             data[existingDataIndex][table] = rowData; // != [] ?
           }
         }
-        if(i == tablesName.length - 1) {
+        if(i === tablesName.length - 1) {
           resolve(data);
         }
 
@@ -308,25 +314,24 @@ function getAllDefuntsData() {
         error: err
       });
     } finally {
-      if (connection) {
+      if (connection && pool.isBorrowedResource(connection)) {
         await pool.release(connection);
       }
     }
   });
 }
 
-
-
 /**
  * Retrieves a defunt and their uploaded docs associated data by their ID.
  *
  * @param {number} numeroDefunt - The ID of the defunt to retrieve.
+ * @param {String} fileName - The file name of the defunt to retrieve.
  * @returns {Promise<Object>} A Promise that resolves to an object containing the
  * retrieved data, with keys for each table name and values for the corresponding
  * row data.
  * @throws {Error} If there is an error retrieving data from the database.
  */
-async function getOneDefuntUploadedDataById(numeroDefunt, fileName){
+async function getOneUploadedFileDataById(numeroDefunt, fileName){
   return new Promise(async (resolve, reject) => {
     let connection;
     try {
@@ -334,8 +339,12 @@ async function getOneDefuntUploadedDataById(numeroDefunt, fileName){
       const query = `SELECT ${fileName}
       FROM uploaded_documents AS upd WHERE upd.numeroDefunt = ${numeroDefunt}`;
 
-      const [rows, fields] = await connection.execute(query);
-      resolve(rows[0][`${fileName}`]);
+      const [rows] = await connection.execute(query);
+      if(rows[0] != null){
+        resolve(rows[0][`${fileName}`]);
+      }else{
+        resolve(null);
+      }
 
     } catch (err) {
       if (connection) await connection.rollback();
@@ -345,7 +354,7 @@ async function getOneDefuntUploadedDataById(numeroDefunt, fileName){
         msg: err //
       });
     } finally {
-      if (connection) {
+      if (connection && pool.isBorrowedResource(connection)) {
         await pool.release(connection);
       }
     }
@@ -356,44 +365,44 @@ async function getOneDefuntUploadedDataById(numeroDefunt, fileName){
 
 
 function getFilesNameByIndex(index){
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     let filesName = '';
     switch (index) {
       case '0': //mairie
-        filesName = ',pouvoir, cni_fr_dec, cni_fr_defunt, act_naissance, declaration_deces, tm_apres_mb'; 
+        filesName = 'pouvoir, cni_fr_dec, cni_fr_defunt, act_naissance, declaration_deces, tm_apres_mb';
         break;
       case '1': //Prefecture
-        filesName = ',demande_prefecture, pouvoir, cni_fr_dec, certificat_deces, act_deces, fermeture_cercueil';
+        filesName = 'demande_prefecture, pouvoir, cni_fr_dec, certificat_deces, act_deces, fermeture_cercueil';
         break;
       case '2': //consulat
-        filesName = ',demande_consulaire, pouvoir, cni_origin_defunt, certificat_deces, attestation_covid, act_deces, mise_en_biere,attestation_honneur'; 
+        filesName = 'demande_consulaire, pouvoir, cni_origin_defunt, certificat_deces, attestation_covid, act_deces, mise_en_biere,attestation_honneur';
         break;
       case '3': //deroulement rap
-        filesName = ',deroulement_rap';          
+        filesName = 'deroulement_rap';
         break;
       case '4': //fret
-        filesName = ',page_garde_garde, pouvoir, cni_fr_dec, cni_fr_defunt, certificat_deces, attestation_covid, act_deces, fermeture_cercueil, mise_en_biere, autorisation_prefecture, autorisation_consulaire';  
+        filesName = 'page_garde_garde, pouvoir, cni_fr_dec, cni_fr_defunt, certificat_deces, attestation_covid, act_deces, fermeture_cercueil, mise_en_biere, autorisation_prefecture, autorisation_consulaire';
         break;
       case '5': //ambilance
-        filesName = ',page_garde_garde, certificat_deces, attestation_covid, act_deces, autorisation_prefecture, autorisation_consulaire, deroulement_rap, confirmation_vol';  
+        filesName = 'page_garde_garde, certificat_deces, attestation_covid, act_deces, autorisation_prefecture, autorisation_consulaire, deroulement_rap, confirmation_vol';
         break;
       case '6': //assurance //Dossier famille
-        filesName = ',page_garde_garde, page_condoleance, deroulement_rap, pouvoir, cni_fr_dec, cni_origin_defunt, certificat_deces, attestation_covid, act_deces, autorisation_prefecture, autorisation_consulaire';  //, deroulement_rap //page_garde_garde, page_condoleance,
+        filesName = 'page_garde_garde, page_condoleance, deroulement_rap, pouvoir, cni_fr_dec, cni_origin_defunt, certificat_deces, attestation_covid, act_deces, autorisation_prefecture, autorisation_consulaire';  //, deroulement_rap //page_garde_garde, page_condoleance,
         break;
       case '7': //assuranse2 //Accompagnateur
-        filesName = ',attestation_accompagnateurs, passport1, passport2, act_deces, justification_lien_parente, deroulement_rap';
+        filesName = 'attestation_accompagnateurs, passport1, passport2, act_deces, justification_lien_parente, deroulement_rap';
         break;
       case '8'://21://
-        filesName = ',pouvoir, cni_fr_dec, cni_fr_defunt, act_naissance, declaration_deces, tm_apres_mb'; 
+        filesName = 'pouvoir, cni_fr_dec, cni_fr_defunt, act_naissance, declaration_deces, tm_apres_mb';
         break;
       case '9'://22://Cimetiere inh
-        filesName = ',pouvoir, cni_fr_dec, certificat_deces, act_deces, fermeture_cercueil, achat_concession, bon_travaux'; //if achat_concession, bon_travaux null check achat_de_concession, bon_de_travaux in generated                 
+        filesName = 'pouvoir, cni_fr_dec, certificat_deces, act_deces, fermeture_cercueil, achat_concession, bon_travaux'; //if achat_concession, bon_travaux null check achat_de_concession, bon_de_travaux in generated
         break;
       case '10'://23://Deroulement inh
-        filesName = ',deroulement_inh'; 
+        filesName = 'deroulement_inh';
         break;
       case '11': //24://Dossier famille
-        filesName = ',page_garde_garde, page_condoleance, deroulement_inh, pouvoir, cni_fr_dec, cni_origin_defunt, certificat_deces, act_deces'; 
+        filesName = 'page_garde_garde, page_condoleance, deroulement_inh, pouvoir, cni_fr_dec, cni_origin_defunt, certificat_deces, act_deces';
         break;
       default:
         console.log("No index corresponding");
@@ -414,7 +423,86 @@ function getFilesNameByIndex(index){
  * row data.
  * @throws {Error} If there is an error retrieving data from the database.
  */
-async function getGeneratedFolderFileById(numeroDefunt,index) {
+async function checkDownloadedFilesById(numeroDefunt, index) {
+  return new Promise(async (resolve, reject) => {
+    let connection;
+    let result = [];
+    try {
+      connection = await pool.acquire();
+      let filesName = "";
+
+      await getFilesNameByIndex(index)
+          .then((_filesName) => {
+            filesName = _filesName;
+          })
+          .catch((error) => {
+            console.log("Error:", error);
+          });
+
+      if (filesName !== "") {
+        let listFilesName = filesName.split(",").map((value) => value.trim());
+        const query = `SELECT ${filesName}
+        FROM uploaded_documents AS upd
+        LEFT JOIN generated_documents AS gd ON upd.numeroDefunt = gd.numeroDefunt
+        WHERE upd.numeroDefunt = ?`;
+        let value = [numeroDefunt];
+        const [rows,] = await connection.execute(query, value);
+
+        if (rows.length > 0) {
+          for (const fileName of listFilesName) {
+            if (rows[0][fileName] != null && (rows[0][fileName]).toString('utf8') !== '[]') {
+              result.push(fileName);
+            }
+          }
+          resolve({
+            expected: listFilesName,
+            received: result,
+            folder_index: index,
+            numeroDefunt: numeroDefunt
+          });
+        } else {
+          reject({
+            error: "Error-Check-File",
+            message: `defunt with id : ${numeroDefunt} has no file uploded`,
+          });
+        }
+      } else {
+
+        // saveLogs(`Note 470 - Check-File index : ${index} incorrect`);
+
+        reject({
+          error: "Error-Check-File",
+          message: `index : ${index} incorrect`,
+        });
+      }
+    } catch (err) {
+      saveLogs(`Error 503 - check GeneratedFileById :  ${err}`);
+      if (connection) await connection.rollback();
+      console.log(err);
+      reject({
+        error: "Error-Check-File",
+        message: err, //!
+      });
+    } finally {
+      if (connection) {
+        await pool.release(connection);
+      }
+    }
+  });
+}
+
+/**
+ * Retrieves a defunt and their associated data by their ID.
+ *
+ * @param {number} numeroDefunt - The ID of the defunt to retrieve.
+ * @param {number} index - The case number of the folder to generate.
+ * @param {number} userId - The case number of the folder to generate.
+ * @returns {Promise<Object>} A Promise that resolves to an object containing the
+ * retrieved data, with keys for each table name and values for the corresponding
+ * row data.
+ * @throws {Error} If there is an error retrieving data from the database.
+ */
+async function getGeneratedFolderFileById(numeroDefunt,index,userId) {
   return new Promise(async (resolve, reject) => {
 
     let connection;
@@ -425,95 +513,90 @@ async function getGeneratedFolderFileById(numeroDefunt,index) {
       let filesName = '';
       const tmpDirectoryPath = './util/cache/';
 
-
-
       // const fileLog = fs.createWriteStream(`${tmpDirectoryPath}logs_generatedFolder.txt`);
 
       await getFilesNameByIndex(index)
           .then(_filesName => {
             filesName = _filesName;
-          }).catch(error => { console.log("Error:", error);});
+          }).catch(error => {
+            console.log("Error:", error);
+          });
 
-      var listFilesName = filesName.split(',').map(value => value.trim())
+      if (filesName === "") {
+        reject({
+          error: "Error-Generation-PDF",
+          msg: `index : ${index} incorrect`,
+        });
+      }
 
-      const query = `SELECT defuntNom ${filesName}
-      From defunt as d
-      LEFT JOIN uploaded_documents AS upd ON d.numeroDefunt = upd.numeroDefunt
-      LEFT JOIN generated_documents AS gd ON d.numeroDefunt = gd.numeroDefunt
-      WHERE upd.numeroDefunt = ?`;
-      const [rows, fields] = await connection.execute(query , [numeroDefunt]); //
+        let listFilesName = filesName.split(',').map(value => value.trim())
 
-      console.log("443-- numeroDefunt-",numeroDefunt);
+        const query = `SELECT defuntNom ,${filesName}
+                              From defunt as d
+                              LEFT JOIN uploaded_documents AS upd ON d.numeroDefunt = upd.numeroDefunt
+                              LEFT JOIN generated_documents AS gd ON d.numeroDefunt = gd.numeroDefunt
+                              WHERE upd.numeroDefunt = ?`;
+        const [rows] = await connection.execute(query, [numeroDefunt]); //
 
-      console.log("445-- rows-",rows);
-
-
-
-      if(rows.length > 0){
+        if (rows.length === 0) {
+          reject({
+            error: "Error-Generation-PDF",
+            msg: `Defunt with id: ${numeroDefunt} has no file uploaded or does not exist`,
+          });
+        }
 
         const mergedDoc = await PDFDocument.create();
-
         mergedDoc.setTitle(`Dossier_${foldersTitle[index]}_${rows[0]['defuntNom']}`);
         mergedDoc.setProducer('Lapiete'); // Set the Producer name
-        mergedDoc.setCreator('Lapiete'); //admin_Id
+        mergedDoc.setCreator(`user_${userId}`); //admin_Id
 
         for (const fileName of listFilesName) {
-          if(rows[0][`${fileName}`] != null){
+            if (rows[0][`${fileName}`] != null) {
 
-            let fileBuffer = Buffer.from(rows[0][`${fileName}`]);
-            let extension = getFileExtension(fileBuffer);
+              let fileBuffer = Buffer.from(rows[0][`${fileName}`]);
+              let extension = getFileExtension(fileBuffer);
 
-            if(fileBuffer != null && extension != 'pdf'){
+              if (fileBuffer != null && extension !== 'pdf') {
+                const imageDoc = await PDFDocument.create();
+                const imagePage = imageDoc.addPage();
+                let image;
+                if (extension === 'jpg' || extension === 'jpeg')
+                  image = await imageDoc.embedJpg(fileBuffer);
+                if (extension === 'png')
+                  image = await imageDoc.embedPng(fileBuffer);
+                imagePage.drawImage(image, {x: 0, y: 0, width: image.width, height: image.height});
+                const imageBytes = await imageDoc.save();
 
-              const imageDoc = await PDFDocument.create();
-              const imagePage = imageDoc.addPage();
-              let image;
-              if(extension == 'jpg' || extension == 'jpeg')
-                image = await imageDoc.embedJpg(fileBuffer);
-              if(extension == 'png')
-                image = await imageDoc.embedPng(fileBuffer);
+                // Merge the converted image PDF with the main merged document
+                const imagePdf = await PDFDocument.load(imageBytes);
+                const pages = await mergedDoc.copyPages(imagePdf, [0]);
+                pages.forEach((page) => mergedDoc.addPage(page));
 
-              imagePage.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
-              const imageBytes = await imageDoc.save();
+              } else if (extension === "pdf") {
+                // Add the PDF file as a byte array to the main merged document
+                const pdf = await PDFDocument.load(fileBuffer,{ ignoreEncryption: true });
+                const pages = await mergedDoc.copyPages(pdf, pdf.getPageIndices());
+                pages.forEach((page) => mergedDoc.addPage(page));
 
-              // Merge the converted image PDF with the main merged document
-              const imagePdf = await PDFDocument.load(imageBytes);
-              const pages = await mergedDoc.copyPages(imagePdf, [0]);
-              pages.forEach((page) => mergedDoc.addPage(page));
-
-            }else
-            {
-  
-              // Add the PDF file as a byte array to the main merged document
-              const pdf = await PDFDocument.load(fileBuffer);
-              const pages = await mergedDoc.copyPages(pdf, pdf.getPageIndices());
-              pages.forEach((page) => mergedDoc.addPage(page));
-
-            }//end else
+              }
+            }
           }
-        }
         // Save the PDF in local
         const filePDFPath = `${tmpDirectoryPath}dossier_${foldersTitle[index]}_${rows[0]['defuntNom']}.pdf`;
 
         const finalPdfBytes = await mergedDoc.save();
         fs.writeFileSync(filePDFPath, finalPdfBytes);
-
-
-        // console.log("--mergedDoc--");
-        // console.log(mergedDoc);
         resolve(filePDFPath);
-      }//end if rows
+
 
     } catch (err) {
-       saveLogs(`Error 513 - getGeneratedFolderFileById :  ${err}`);
-      if (connection) await connection.rollback();
-      console.log(err);
+       saveLogs(`Error in getGeneratedFolderFileById: ${err}`);
       reject({
         error:'Error-Generation-PDF',
-        msg: err //!
+        msg:`Error in generating PDF: ${err.message}`
       });
     } finally {
-      if (connection) {
+      if (connection && pool.isBorrowedResource(connection)) {
         await pool.release(connection);
       }
     }
@@ -536,7 +619,6 @@ async function getOneDefuntDataById(numeroDefunt){
     let connection;
     try {
       connection = await pool.acquire();
-
       const query = `SELECT *
       FROM defunt AS d
       LEFT JOIN decisionnaire AS dcr ON d.numeroDefunt = dcr.numeroDefunt
@@ -550,23 +632,25 @@ async function getOneDefuntDataById(numeroDefunt){
       LEFT JOIN vol AS v ON d.numeroDefunt = v.numeroDefunt
       WHERE d.numeroDefunt = ${numeroDefunt}`;
 
-      const [rows, fields] = await connection.execute(query);
+      const [rows,] = await connection.execute(query);
 
-      let jsonData = await jsonP(rows);
-
+      let jsonData;
+      if (rows.length > 0) {
+        jsonData = await jsonP(rows, numeroDefunt);
+      } else {
+        jsonData = {};
+      }
       resolve(jsonData);
 
     } catch (err) {
-      saveLogs(`Error 562 - getOneDefuntDataById :  ${err}`);
-
-      if (connection) await connection.rollback();
+      saveLogs(`Error 646 - getOneDefuntDataById : ${err}`);
       console.log(err);
       reject({
         error:'Error-retrieving-database',
-        msg: err //!
+        msg: `Error in  getOneDefuntDataById :${err}`,
       });
     } finally {
-      if (connection) {
+      if (connection && pool.isBorrowedResource(connection)) {
         await pool.release(connection);
       }
     }
@@ -576,78 +660,72 @@ async function getOneDefuntDataById(numeroDefunt){
 
 /**
  * @param {string} lastName - The last name of the defunt to retrieve.
- * @returns {Promise<Object>} A Promise that resolves to an object containing the
+ * @returns {Promise<Array<Object>>} A Promise that resolves to an object containing the
  * retrieved data, with keys for each table name and values for the corresponding
  * row data.
  * @throws {Error} If there is an error retrieving data from the database.
  */
 async function getDefuntDataByName(lastName) {
-
   return new Promise(async (resolve, reject) => {
+    let connection;
     try {
-      console.log(`search on : ${lastName}`);
-
       const tableName = 'defunt';
-      let query = `SELECT * FROM ${tableName} WHERE LOWER(defuntNom) LIKE LOWER('%${decodeURIComponent(lastName)}%')`;
-      var results = [];
+      connection = await pool.acquire();
 
-      const connection = await pool.acquire();
+      // Using parameterized query to prevent SQL injection
+      const query = `SELECT * FROM ${tableName} WHERE LOWER(defuntNom) LIKE LOWER(?)`;
+      const queryParams = [`%${decodeURIComponent(lastName)}%`];
+
+      const [rows] = await connection.execute(query,queryParams);
+
       try {
-        const [rows, fields] = await connection.execute(query);
-        results = rows;
-        console.log(rows);
-
-        if(rows.length == 1){
-          var id = rows[0]['numeroDefunt'];
-          if (connection) { //end the first
-            console.log("350-- search byName realise connection----");
-            saveLogs(`Note 606 - getDefuntDataByName connectection closed `);
-
-            await pool.clear(connection);
+        if(rows.length === 1){
+          let id = rows[0]['numeroDefunt'];
+          if (connection && pool.isBorrowedResource(connection)) {
             await pool.release(connection);
           }
 
           await getOneDefuntDataById(id)
               .then(data => {
-                console.log("------",data);
                 resolve(data);
               })
               .catch(err => {
-                saveLogs(`Error 617 - getDefuntDataByName :  ${err}`);
+                saveLogs(`Error 592 - getDefuntDataByName :  ${err}`);
                 console.log(err)
                 reject({
                   error:'Error-retrieving-database',
-                  msg: err //
+                  msg: err
                 });
 
               });
-        }else{
+        }
+        else{
           resolve(rows);
         }
+      } catch (err) {
+        saveLogs(`Error 775 - getDefuntDataByName :  ${err}`);
+        reject({
+          error: "Error-retrieving-database",
+          msg: err, //!
+        });
 
-      } finally {
-        if (connection && results.length != 1) {
-          try{ //don't excute if search by name
-            console.log("377-- finally realise connection----");
-            
-            await pool.release(connection);
-          } catch (err) {
-            console.log(err);
-          }
-        }
       }
-
     } catch (err) {
-      console.log("err- 642 -",err);
-      saveLogs(`Error 642 - getDefuntDataByName :  ${err}`);
+      console.log("err- 714 -",err);
+      saveLogs(`Error 715 - getDefuntDataByName :  ${err}`);
       reject({
         error:'Error-retrieving-database',
-        msg: err
+        msg: `${err}`
       });
     }
+    finally {
+      if (connection && pool.isBorrowedResource(connection)) {
+        await pool.release(connection);
+      }
+    }
+
   })
 }
-
 
 
 /**
@@ -666,22 +744,21 @@ async function getUserData(id) {
 
       const connection = await pool.acquire();
       try {
-        const [rows, fields] = await connection.execute(query);
+        const [rows, ] = await connection.execute(query);
         resolve(rows[0]);
 
       } finally {
-        if (connection) {
+        if (connection && pool.isBorrowedResource(connection)) {
           await pool.release(connection);
         }
       }
 
     } catch (err) {
-      saveLogs(`Error 680 - getUserData :  ${err}`);
-
+      saveLogs(`Error 757 - getUserData :  ${err}`);
       console.log(err);
       reject({
         error:'Error-retrieving-database',
-        msg: err
+        msg: `${err}`
       });
     }
   })

@@ -1,0 +1,9 @@
+[2024-01-03 21:04:36] user:1 deleted defunt :3.
+[2024-01-03 22:39:52] 64 put - update defunt : 2 by user 1
+[2024-01-03 22:43:24] Success login for user : admin@gmail.com
+[2024-01-03 22:44:03] Success login for user : admin@gmail.com
+[2024-01-03 22:47:07] success: update defunt : 1 by user 1
+[2024-01-03 22:59:29] success: update defunt : 1 by user 1
+[2024-01-03 22:59:32] user:1 generate folder:8 for defunt :1.
+[2024-01-04 00:44:52] Success: login for user : admin@gmail.com
+[2024-01-04 00:45:03] Success: insert new defunt id :4 by user :1

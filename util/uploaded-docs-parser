@@ -21,11 +21,6 @@ module.exports = async (request) => {
             created_at: rows[0]['created_at'] ?? null,
           };
 
-
- 
-          //2.31Mb
-
-
           const uploaded_documents = {
             numeroDefunt: rows[0]['numeroDefunt'] ?? null,
             cni_origin_defunt: null,
@@ -51,20 +46,11 @@ module.exports = async (request) => {
             // achatConcession: [64, 65, 66],
             // bonTravaux: [67, 68, 69],
           };
-          
-    
-          
-
-      
-
 
           
           let jsonData = {};
           // jsonData['defunt'] = defunt;
           jsonData['uploaded_documents'] =  uploaded_documents;
-          ;
-
-
 
         resolve(jsonData); 
       } catch (err) {

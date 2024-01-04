@@ -1,6 +1,6 @@
 {
   "name": "lapiete_server",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "> This is vanilla Node.js CRUD API lapiete project.",
   "main": "server.js",
   "scripts": {
@@ -28,7 +28,10 @@
     "fs": "^0.0.1-security",
     "generic-pool": "^3.9.0",
     "jsonwebtoken": "^9.0.0",
+    "multer": "^1.4.5-lts.1",
     "mysql2": "^3.2.0",
+    "nodemon": "^3.0.2",
+    "path": "^0.12.7",
     "pdf-lib": "^1.17.1",
     "pg": "^8.10.0"
   }

@@ -2,6 +2,7 @@ const getReq = require("./methods/get-request");
 const postReq = require("./methods/post-request");
 const putReq = require("./methods/put-request");
 const deleteReq = require("./methods/delete-request");
+
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -10,10 +11,11 @@ const PORT = process.env.PORT || 3000;
 const app = express();
 
 app.use(cors({
-  origin: '*', //https://your-client-website.com
-  methods: ['GET', 'PUT', 'POST', 'DELETE'] //'HEAD', 'PATCH',
+  origin: '*',
+  methods: ['GET', 'PUT', 'POST', 'DELETE']
 }));
 
+app.use(express.urlencoded({ extended: true }));
 
 
 // const whitelist = ['https://www.lapiete.com/', 'https://lapiete3.000webhostapp.com'];
@@ -27,7 +29,6 @@ app.use(cors({
 //   }
 // }
 // app.use(cors(corsOptions));
-
 
 app.use((req, res) => {
 
@@ -48,7 +49,7 @@ app.use((req, res) => {
       res.statusCode = 404;
       res.setHeader("Content-Type", "application/json");
       res.write(
-        JSON.stringify({ title: "Not Found", message: "Route not found" })
+        JSON.stringify({ title: "Not Found", message: "Route not found for this method" })
       );
       res.end();
   }
@@ -58,4 +59,3 @@ app.use((req, res) => {
 const server = app.listen(PORT, () => {
   console.log(`Server started on port ${server.address().port}`);
 });
-
