@@ -7,3 +7,127 @@
 [2024-01-03 22:59:32] user:1 generate folder:8 for defunt :1.
 [2024-01-04 00:44:52] Success: login for user : admin@gmail.com
 [2024-01-04 00:45:03] Success: insert new defunt id :4 by user :1
+[2024-01-24 11:50:47] Success: login for user : admin@gmail.com
+[2024-01-24 11:51:32] success: update defunt : 30 by user 1
+[2024-01-24 11:51:51] Error in update defunt 30 : TypeError [ERR_INVALID_ARG_TYPE]: The first argument must be of type string or an instance of Buffer, ArrayBuffer, or Array or an Array-like Object. Received type number (30)
+[2024-01-24 11:51:51] Error 67 - put - cannot update Defunt :  [object Object]
+[2024-01-24 11:52:22] Error in update defunt 30 : TypeError [ERR_INVALID_ARG_TYPE]: The first argument must be of type string or an instance of Buffer, ArrayBuffer, or Array or an Array-like Object. Received type number (30)
+[2024-01-24 11:52:22] Error 67 - put - cannot update Defunt :  [object Object]
+[2024-01-24 11:52:41] Error in update defunt 30 : TypeError [ERR_INVALID_ARG_TYPE]: The first argument must be of type string or an instance of Buffer, ArrayBuffer, or Array or an Array-like Object. Received type number (30)
+[2024-01-24 11:52:41] Error 67 - put - cannot update Defunt :  [object Object]
+[2024-01-24 11:53:16] success: update defunt : 30 by user 1
+[2024-01-24 11:53:32] Error in update defunt 30 : TypeError [ERR_INVALID_ARG_TYPE]: The first argument must be of type string or an instance of Buffer, ArrayBuffer, or Array or an Array-like Object. Received type number (30)
+[2024-01-24 11:53:32] Error 67 - put - cannot update Defunt :  [object Object]
+[2024-01-24 11:53:41] Error in update defunt 30 : TypeError [ERR_INVALID_ARG_TYPE]: The first argument must be of type string or an instance of Buffer, ArrayBuffer, or Array or an Array-like Object. Received type number (30)
+[2024-01-24 11:53:41] Error 67 - put - cannot update Defunt :  [object Object]
+[2024-01-24 11:54:00] Error in update defunt 30 : TypeError [ERR_INVALID_ARG_TYPE]: The first argument must be of type string or an instance of Buffer, ArrayBuffer, or Array or an Array-like Object. Received type number (30)
+[2024-01-24 11:54:00] Error 67 - put - cannot update Defunt :  [object Object]
+[2024-01-24 11:56:43] Error in update defunt 30 : TypeError [ERR_INVALID_ARG_TYPE]: The first argument must be of type string or an instance of Buffer, ArrayBuffer, or Array or an Array-like Object. Received type number (30)
+[2024-01-24 11:56:43] Error 67 - put - cannot update Defunt :  [object Object]
+[2024-01-24 12:14:19] Error in update defunt 30 : TypeError [ERR_INVALID_ARG_TYPE]: The first argument must be of type string or an instance of Buffer, ArrayBuffer, or Array or an Array-like Object. Received type number (30)
+[2024-01-24 12:14:19] Error 67 - put - cannot update Defunt :  [object Object]
+[2024-01-24 12:21:24] Success: login for user : admin@gmail.com
+[2024-01-24 12:21:38] success: update defunt : 30 by user 1
+[2024-01-24 12:21:46] Error in update defunt 30 : TypeError [ERR_INVALID_ARG_TYPE]: The first argument must be of type string or an instance of Buffer, ArrayBuffer, or Array or an Array-like Object. Received type number (30)
+[2024-01-24 12:21:46] Error 67 - put - cannot update Defunt :  [object Object]
+[2024-01-24 12:25:52] Error in update defunt 30 : TypeError [ERR_INVALID_ARG_TYPE]: The first argument must be of type string or an instance of Buffer, ArrayBuffer, or Array or an Array-like Object. Received type number (30)
+[2024-01-24 12:25:52] Error 67 - put - cannot update Defunt :  [object Object]
+[2024-01-24 12:28:03] Error in update defunt 30 : TypeError [ERR_INVALID_ARG_TYPE]: The first argument must be of type string or an instance of Buffer, ArrayBuffer, or Array or an Array-like Object. Received type number (30)
+[2024-01-24 12:28:03] Error 67 - put - cannot update Defunt :  [object Object]
+[2024-01-24 12:28:32] Error in update defunt 30 : TypeError [ERR_INVALID_ARG_TYPE]: The first argument must be of type string or an instance of Buffer, ArrayBuffer, or Array or an Array-like Object. Received type number (30)
+[2024-01-24 12:28:32] Error 67 - put - cannot update Defunt :  [object Object]
+[2024-01-24 12:30:02] Error in update defunt 30 : TypeError [ERR_INVALID_ARG_TYPE]: The first argument must be of type string or an instance of Buffer, ArrayBuffer, or Array or an Array-like Object. Received type number (30)
+[2024-01-24 12:30:02] Error 67 - put - cannot update Defunt :  [object Object]
+[2024-01-24 12:30:36] Error in update defunt 30 : TypeError [ERR_INVALID_ARG_TYPE]: The first argument must be of type string or an instance of Buffer, ArrayBuffer, or Array or an Array-like Object. Received type number (30)
+[2024-01-24 12:30:36] Error 67 - put - cannot update Defunt :  [object Object]
+[2024-01-24 12:31:22] Error in update defunt 30 : TypeError [ERR_INVALID_ARG_TYPE]: The first argument must be of type string or an instance of Buffer, ArrayBuffer, or Array or an Array-like Object. Received type number (30)
+[2024-01-24 12:31:22] Error 67 - put - cannot update Defunt :  [object Object]
+[2024-01-24 12:33:26] Error in update defunt 30 : TypeError [ERR_INVALID_ARG_TYPE]: The first argument must be of type string or an instance of Buffer, ArrayBuffer, or Array or an Array-like Object. Received type number (30)
+[2024-01-24 12:33:26] Error 67 - put - cannot update Defunt :  [object Object]
+[2024-01-24 12:34:03] Error in update defunt 30 : TypeError [ERR_INVALID_ARG_TYPE]: The first argument must be of type string or an instance of Buffer, ArrayBuffer, or Array or an Array-like Object. Received type number (30)
+[2024-01-24 12:34:03] Error 67 - put - cannot update Defunt :  [object Object]
+[2024-01-24 12:34:28] Error in update defunt 30 : TypeError [ERR_INVALID_ARG_TYPE]: The first argument must be of type string or an instance of Buffer, ArrayBuffer, or Array or an Array-like Object. Received type number (30)
+[2024-01-24 12:34:28] Error 67 - put - cannot update Defunt :  [object Object]
+[2024-01-24 12:35:29] Error in update defunt 30 : ReferenceError: field is not defined
+[2024-01-24 12:35:29] Error 67 - put - cannot update Defunt :  [object Object]
+[2024-01-24 12:35:57] Error in update defunt 30 : TypeError [ERR_INVALID_ARG_TYPE]: The first argument must be of type string or an instance of Buffer, ArrayBuffer, or Array or an Array-like Object. Received type number (30)
+[2024-01-24 12:35:57] Error 67 - put - cannot update Defunt :  [object Object]
+[2024-01-24 12:36:58] Error in update defunt 30 : ReferenceError: Cannot access 'values' before initialization
+[2024-01-24 12:36:58] Error 67 - put - cannot update Defunt :  [object Object]
+[2024-01-24 12:37:29] Error in update defunt 30 : TypeError [ERR_INVALID_ARG_TYPE]: The first argument must be of type string or an instance of Buffer, ArrayBuffer, or Array or an Array-like Object. Received type number (30)
+[2024-01-24 12:37:29] Error 67 - put - cannot update Defunt :  [object Object]
+[2024-01-24 12:37:57] Error in update defunt 30 : TypeError [ERR_INVALID_ARG_TYPE]: The first argument must be of type string or an instance of Buffer, ArrayBuffer, or Array or an Array-like Object. Received type number (30)
+[2024-01-24 12:37:57] Error 67 - put - cannot update Defunt :  [object Object]
+[2024-01-24 12:42:53] success: update defunt : 30 by user 1
+[2024-01-24 12:43:02] user:1 generate folder:0 for defunt :30.
+[2024-01-24 12:43:09] success: update defunt : 30 by user 1
+[2024-01-24 12:45:57] success: update defunt : 30 by user 1
+[2024-01-24 12:46:14] success: update defunt : 30 by user 1
+[2024-01-24 12:46:14] success: update defunt : 30 by user 1
+[2024-01-24 12:46:27] success: update defunt : 30 by user 1
+[2024-01-24 12:46:27] success: update defunt : 30 by user 1
+[2024-01-24 13:39:19] Success: login for user : admin@gmail.com
+[2024-01-24 13:39:36] success: update defunt : 30 by user 1
+[2024-01-24 13:39:53] success: update defunt : 30 by user 1
+[2024-01-24 13:40:37] success: update defunt : 30 by user 1
+[2024-03-14 16:00:58] Success: login for user : admin@gmail.com
+[2024-03-14 16:00:58] Success: login for user : admin@gmail.com
+[2024-03-14 16:03:53] success: update defunt : 28 by user 1
+[2024-03-14 16:14:22] success: update defunt : 28 by user 1
+[2024-03-14 16:15:58] success: update defunt : 28 by user 1
+[2024-03-14 16:20:11] success: update defunt : 28 by user 1
+[2024-03-14 16:21:28] success: update defunt : 28 by user 1
+[2024-03-14 16:23:32] success: update defunt : 28 by user 1
+[2024-03-14 16:25:27] success: update defunt : 28 by user 1
+[2024-03-14 16:25:32] success: update defunt : 28 by user 1
+[2024-03-14 16:25:47] success: update defunt : 28 by user 1
+[2024-03-14 16:25:51] user:1 generate folder:0 for defunt :28.
+[2024-03-14 16:25:57] success: update defunt : 28 by user 1
+[2024-03-14 16:26:01] user:1 generate folder:1 for defunt :28.
+[2024-03-14 16:26:09] success: update defunt : 28 by user 1
+[2024-03-14 16:26:12] user:1 generate folder:2 for defunt :28.
+[2024-03-14 16:26:18] success: update defunt : 28 by user 1
+[2024-03-14 16:26:21] user:1 generate folder:3 for defunt :28.
+[2024-03-14 16:26:28] success: update defunt : 28 by user 1
+[2024-03-14 16:26:33] user:1 generate folder:4 for defunt :28.
+[2024-03-14 16:26:40] success: update defunt : 28 by user 1
+[2024-03-14 16:26:40] success: update defunt : 28 by user 1
+[2024-03-14 16:26:43] user:1 generate folder:5 for defunt :28.
+[2024-03-14 16:26:53] success: update defunt : 28 by user 1
+[2024-03-14 16:26:53] success: update defunt : 28 by user 1
+[2024-03-14 16:26:53] success: update defunt : 28 by user 1
+[2024-03-14 16:26:55] user:1 generate folder:6 for defunt :28.
+[2024-03-14 16:27:40] success: update defunt : 35 by user 1
+[2024-03-14 16:28:01] success: update defunt : 35 by user 1
+[2024-03-14 16:28:26] success: update defunt : 35 by user 1
+[2024-03-14 16:28:26] success: update defunt : 35 by user 1
+[2024-03-14 16:28:26] success: update defunt : 35 by user 1
+[2024-03-14 16:28:31] success: update defunt : 35 by user 1
+[2024-03-14 16:28:31] success: update defunt : 35 by user 1
+[2024-03-14 16:28:31] success: update defunt : 35 by user 1
+[2024-03-14 16:37:26] success: update defunt : 35 by user 1
+[2024-03-14 16:38:58] success: update defunt : 35 by user 1
+[2024-03-14 16:39:42] success: update defunt : 35 by user 1
+[2024-03-14 16:45:17] success: update defunt : 35 by user 1
+[2024-03-14 16:50:00] success: update defunt : 35 by user 1
+[2024-03-14 16:50:24] success: update defunt : 35 by user 1
+[2024-03-14 16:50:34] success: update defunt : 35 by user 1
+[2024-03-14 16:50:44] success: update defunt : 35 by user 1
+[2024-03-14 17:15:02] success: update defunt : 35 by user 1
+[2024-03-14 17:15:59] success: update defunt : 35 by user 1
+[2024-03-14 17:17:05] success: update defunt : 35 by user 1
+[2024-03-14 17:17:44] success: update defunt : 35 by user 1
+[2024-03-14 17:17:53] success: update defunt : 35 by user 1
+[2024-03-15 09:53:28] Success: login for user : admin@gmail.com
+[2024-03-15 09:55:00] success: update defunt : 35 by user 1
+[2024-03-15 10:15:32] success: update defunt : 35 by user 1
+[2024-03-15 10:28:21] success: update defunt : 35 by user 1
+[2024-03-15 10:28:48] success: update defunt : 35 by user 1
+[2024-03-15 10:37:26] success: update defunt : 35 by user 1
+[2024-03-15 11:07:00] success: update defunt : 35 by user 1
+[2024-03-15 11:08:02] success: update defunt : 35 by user 1
+[2024-03-15 11:12:28] success: update defunt : 35 by user 1
+[2024-03-15 11:12:46] success: update defunt : 35 by user 1
+[2024-03-15 11:12:54] success: update defunt : 35 by user 1
+[2024-03-15 11:38:14] success: update defunt : 35 by user 1
+[2024-03-15 11:40:41] success: update defunt : 35 by user 1
