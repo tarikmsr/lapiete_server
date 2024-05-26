@@ -9,7 +9,7 @@ module.exports = async (request) => {
         resolve(JSON.parse(body));
       });
     } catch (err) {
-      console.log(err);
+      console.log(`Error parse json ${err}`);
       reject(err);
     }
   });
