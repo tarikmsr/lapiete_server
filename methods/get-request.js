@@ -202,6 +202,7 @@ module.exports = async (req, res) => {
       await getGeneratedFolderFileById(defuntId, index, decoded.id)
           .then(async (filePDFPath) => {
 
+            console.log(`------205 --filePDFPath: ${filePDFPath}`);
             const fileName = filePDFPath.split("/").pop();
             const fileStream = fs.createReadStream(filePDFPath.toString());
             const stat = fs.statSync(filePDFPath);
@@ -221,6 +222,7 @@ module.exports = async (req, res) => {
             saveLogs(`user:${decoded.id} generate folder:${index} for defunt :${defuntId}.`);
           })
           .catch((err) => {
+            console.log(`err 255 get folder`);
             console.log(err);
             saveLogs(`Error get download folder ${index} - defunt ${defuntId} : ${err}`)
             res.writeHead(404, { "Content-Type": "application/json" });
@@ -347,7 +349,11 @@ async function getOneUploadedFileDataById(numeroDefunt, fileName){
       }
 
     } catch (err) {
-      if (connection) await connection.rollback();
+      try {
+        if (connection) await connection.rollback();
+      } catch (rollbackErr) {
+        console.error(`Rollback error: ${rollbackErr}`);
+      }
       console.log(err);
       reject({
         error:'Error-retrieving-database',
@@ -396,7 +402,7 @@ function getFilesNameByIndex(index){
         filesName = 'pouvoir, cni_fr_dec, cni_fr_defunt, act_naissance, declaration_deces, tm_apres_mb';
         break;
       case '9'://22://Cimetiere inh
-        filesName = 'pouvoir, cni_fr_dec, certificat_deces, act_deces, fermeture_cercueil, achat_concession, bon_travaux'; //if achat_concession, bon_travaux null check achat_de_concession, bon_de_travaux in generated
+        filesName = 'pouvoir, cni_fr_dec, certificat_deces, act_deces, fermeture_cercueil, achat_concession, demande_inhumation, bon_travaux'; //if achat_concession, bon_travaux null check achat_de_concession, bon_de_travaux in generated
         break;
       case '10'://23://Deroulement inh
         filesName = 'deroulement_inh';
@@ -477,8 +483,12 @@ async function checkDownloadedFilesById(numeroDefunt, index) {
       }
     } catch (err) {
       saveLogs(`Error 503 - check GeneratedFileById :  ${err}`);
-      if (connection) await connection.rollback();
       console.log(err);
+      try {
+        if (connection) await connection.rollback();
+      } catch (rollbackErr) {
+        console.error(`Rollback error: ${rollbackErr}`);
+      }
       reject({
         error: "Error-Check-File",
         message: err, //!
@@ -520,6 +530,10 @@ async function getGeneratedFolderFileById(numeroDefunt,index,userId) {
             filesName = _filesName;
           }).catch(error => {
             console.log("Error:", error);
+            reject({
+              error: "Error-Generation-PDF",
+              msg: `Failed to get files by index: ${error}`,
+            });
           });
 
       if (filesName === "") {
@@ -529,14 +543,14 @@ async function getGeneratedFolderFileById(numeroDefunt,index,userId) {
         });
       }
 
-        let listFilesName = filesName.split(',').map(value => value.trim())
+        let listFilesName = filesName.split(',').map(value => value.trim());
 
         const query = `SELECT defuntNom ,${filesName}
                               From defunt as d
                               LEFT JOIN uploaded_documents AS upd ON d.numeroDefunt = upd.numeroDefunt
-                              LEFT JOIN generated_documents AS gd ON d.numeroDefunt = gd.numeroDefunt
-                              WHERE upd.numeroDefunt = ?`;
-        const [rows] = await connection.execute(query, [numeroDefunt]); //
+                              LEFT JOIN generated_documents AS gd ON d.numeroDefunt = gd.numeroDefunt 
+                              WHERE upd.numeroDefunt = ?`; ///rm gd later
+        const [rows] = await connection.execute(query, [numeroDefunt]);
 
         if (rows.length === 0) {
           reject({
@@ -551,12 +565,15 @@ async function getGeneratedFolderFileById(numeroDefunt,index,userId) {
         mergedDoc.setCreator(`user_${userId}`); //admin_Id
 
         for (const fileName of listFilesName) {
-            if (rows[0][`${fileName}`] != null) {
+
+          if (rows[0][`${fileName}`] != null) {
 
               let fileBuffer = Buffer.from(rows[0][`${fileName}`]);
               let extension = getFileExtension(fileBuffer);
 
               if (fileBuffer != null && extension !== 'pdf') {
+                // Convert image file to PDF
+                try {
                 const imageDoc = await PDFDocument.create();
                 const imagePage = imageDoc.addPage();
                 let image;
@@ -571,13 +588,24 @@ async function getGeneratedFolderFileById(numeroDefunt,index,userId) {
                 const imagePdf = await PDFDocument.load(imageBytes);
                 const pages = await mergedDoc.copyPages(imagePdf, [0]);
                 pages.forEach((page) => mergedDoc.addPage(page));
-
-              } else if (extension === "pdf") {
+                }catch (err) {
+                  console.log(`Error adding file image ${fileName} to merged document: ${err}`);
+                }
+              }
+              else if (extension === "pdf") {
                 // Add the PDF file as a byte array to the main merged document
-                const pdf = await PDFDocument.load(fileBuffer,{ ignoreEncryption: true });
-                const pages = await mergedDoc.copyPages(pdf, pdf.getPageIndices());
-                pages.forEach((page) => mergedDoc.addPage(page));
+                try {
+                  const pdf = await PDFDocument.load(fileBuffer, {ignoreEncryption: true});
+                  const pages = await mergedDoc.copyPages(pdf, pdf.getPageIndices());
+                  pages.forEach((page) => mergedDoc.addPage(page));
 
+                }catch (err) {
+                  console.log(`Error adding PDF ${fileName} to merged document: ${err}`);
+                  reject({
+                    error:'Error-retrieving-database',
+                    message: `Error in ${fileName} : invalid pdf file`,
+                  });
+                }
               }
             }
           }
@@ -593,7 +621,7 @@ async function getGeneratedFolderFileById(numeroDefunt,index,userId) {
        saveLogs(`Error in getGeneratedFolderFileById: ${err}`);
       reject({
         error:'Error-Generation-PDF',
-        msg:`Error in generating PDF: ${err.message}`
+        message:`Error in generating PDF: ${err.message}`
       });
     } finally {
       if (connection && pool.isBorrowedResource(connection)) {
@@ -647,7 +675,7 @@ async function getOneDefuntDataById(numeroDefunt){
       console.log(err);
       reject({
         error:'Error-retrieving-database',
-        msg: `Error in  getOneDefuntDataById :${err}`,
+        message: `Error in  getOneDefuntDataById :${err}`,
       });
     } finally {
       if (connection && pool.isBorrowedResource(connection)) {
@@ -694,7 +722,7 @@ async function getDefuntDataByName(lastName) {
                 console.log(err)
                 reject({
                   error:'Error-retrieving-database',
-                  msg: err
+                  message: err
                 });
 
               });
@@ -706,7 +734,7 @@ async function getDefuntDataByName(lastName) {
         saveLogs(`Error 775 - getDefuntDataByName :  ${err}`);
         reject({
           error: "Error-retrieving-database",
-          msg: err, //!
+          message: err, //!
         });
 
       }
@@ -715,7 +743,7 @@ async function getDefuntDataByName(lastName) {
       saveLogs(`Error 715 - getDefuntDataByName :  ${err}`);
       reject({
         error:'Error-retrieving-database',
-        msg: `${err}`
+        message: `${err}`
       });
     }
     finally {
@@ -758,10 +786,8 @@ async function getUserData(id) {
       console.log(err);
       reject({
         error:'Error-retrieving-database',
-        msg: `${err}`
+        message: `${err}`
       });
     }
   })
 }
-
-

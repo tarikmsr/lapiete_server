@@ -60,7 +60,6 @@ module.exports = async (req, res) => {
 
   if(req.url === "/api/login"){
     let jsonData = await requestToJsonparser(req);
-
     await login(jsonData)
     .then(result => {
       let jsonResult = JSON.stringify(result);
@@ -77,16 +76,10 @@ module.exports = async (req, res) => {
       );
     });
 
-
-
   }
   else if(req.url === "/api/register"){
-  
-
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ message: "not created yet", error: "Route not found" }));
-
-
   }
   else {
 
@@ -207,7 +200,11 @@ async function insertNewDefunt(jsonData) {
 
       }catch(err){
         console.log(err);
-        if (connection) await connection.rollback();
+        try {
+          if (connection) await connection.rollback();
+        } catch (rollbackErr) {
+          console.error(`Rollback error: ${rollbackErr}`);
+        }
         reject({
           error:'error-insert-defunt',
           // error: err['sqlMessage']
@@ -261,11 +258,13 @@ async function insertNewDefunt(jsonData) {
       resolve(res);
 
       }catch(err){
-
-        console.log(121)
         console.log(err)
-    
-        if (connection) await connection.rollback();
+        saveLogs(err);
+        try {
+          if (connection) await connection.rollback();
+        } catch (rollbackErr) {
+          console.error(`Rollback error: ${rollbackErr}`);
+        }
         reject({
           error:'Error-retrieving-database',
           // error: err['sqlMessage']
@@ -288,10 +287,14 @@ async function insertNewDefunt(jsonData) {
 
 
   } catch (err) {
-    console.log("error post 405");
+    console.log("error post 290");
     console.log(err);
 
-    if (connection) await connection.rollback();
+    try {
+        if (connection) await connection.rollback();
+    } catch (rollbackErr) {
+        console.error(`Rollback error: ${rollbackErr}`);
+    }
 
     reject({
       error:'Error-insert-database',
@@ -308,16 +311,16 @@ async function insertNewDefunt(jsonData) {
 }
 
 
-
-
 async function login(jsonData) {
   return new Promise(async (resolve, reject) => {
-
     let connection;
     try {
-    connection = await pool.acquire();
-    
-    let query = `SELECT * FROM users WHERE email = ${connection.escape(jsonData.email)};`;
+      connection = await pool.acquire();
+      if (!connection) {
+        throw new Error('Connection is null');
+      }
+
+      let query = `SELECT * FROM users WHERE email = ${connection.escape(jsonData.email)};`;
     const [result, fields] = await connection.execute(query);
 
       if (!result.length) {
@@ -325,41 +328,45 @@ async function login(jsonData) {
           error:'user-not-found',
         });      
       }
-      bcrypt.compare( jsonData.password, result[0]['password'], (err, bResult) => {
-                
+      bcrypt.compare( jsonData.password, result[0]['password'], async (err, bResult) => {
+
         if (err) {
           console.log(err);
           reject({
-            error:'Password filed not exist',     
-          });     
+            error: 'Password filed not exist',
+          });
         }
-     
+
         if (bResult) {
-          const token = jwt.sign({id:result[0].id}, process.env.SECRET_KEY ,{ expiresIn: '48h' });  
-          connection.execute(`UPDATE users SET last_login = now() WHERE id = '${result[0].id}'`);
-                          
+          const token = jwt.sign({id: result[0].id}, process.env.SECRET_KEY, {expiresIn: '48h'});
+          try {
+            await connection.execute('UPDATE users SET last_login = now() WHERE id = ?', [result[0].id]);
+          } catch (updateErr) {
+            console.error('Error updating last_login:', updateErr);
+            //reject ?
+          }
           resolve({
-            message:'connection-succefull',
+            message: 'connection-succefull',
             token: token,
             user: result[0]
           });
-        }  
+        }
         reject({
-          error:'wrong-password',
+          error: 'wrong-password',
         });
 
       });
 
   } catch (err) {
-    console.log(err);
-    if (connection) await connection.rollback();
-    reject({
-      error:'Erreur-with-database',
-      // error: err['sqlMessage']
-    });
+    saveLogs(`Login, ${err}`);
+      reject({ error:'Erreur-with-database', msg: err.message || err });
   } finally {
     if (connection) {
-      await pool.release(connection);
+      try {
+        await pool.release(connection);
+      } catch (releaseErr) {
+        console.error('Error releasing the connection:', releaseErr);
+      }
     }
   }
 

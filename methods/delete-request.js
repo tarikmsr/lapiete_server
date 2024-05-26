@@ -125,8 +125,10 @@ async function deleteDefunt(id) {
   } catch (err) {
     saveLogs(`Error in delete defunt :${err}.`);
     // Rollback the transaction in case of error
-    if (connection) {
-      await connection.rollback();
+    try {
+      if (connection) await connection.rollback();
+    } catch (rollbackErr) {
+      console.error(`Rollback error: ${rollbackErr}`);
     }
     reject({
       error:'Error-retrieving-database',

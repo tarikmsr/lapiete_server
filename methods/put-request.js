@@ -59,7 +59,6 @@ module.exports = async (req, res) => {
           saveLogs(`success: update defunt : ${id} by user ${decoded.id}`);
         })
         .catch(err => {
-          saveLogs(`Error 67 - put - cannot update Defunt :  ${err}`);
           res.writeHead(404, { "Content-Type": "application/json" });
           res.end(
             JSON.stringify(err)                 
@@ -214,9 +213,9 @@ async function updateIntoDefunt(jsonData, defuntId) {
           let updateQuery = "UPDATE "+tableName+" SET ";  
           let values = [];
 
-          // const startIndex = tableName === 'decisionnaire'? 2:1;
+          const startIndex = tableName === 'decisionnaire'? 2:1;
             //i=1 //without numerodefunt --1 //
-          for (let i = 1 ; i < tableFields.length; i++) {
+          for (let i = startIndex ; i < tableFields.length; i++) {
             updateQuery += `${tableFields[i]} = ?, `;
             values.push(table[tableFields[i]]);
           }
@@ -249,7 +248,21 @@ async function updateIntoDefunt(jsonData, defuntId) {
       }
     resolve('update with success');
   } catch (err) {
-    if (connection) await connection.rollback();
+    try {
+      if (connection) await connection.rollback();
+    } catch (rollbackErr) {
+      console.error(`Rollback error: ${rollbackErr}`);
+    }
+    // Specific handling for TimeoutError by checking error code/message
+    if (err.message && err.message.includes('ResourceRequest timed out')) {
+      console.error(`TimeoutError in updateIntoDefunt: ${err}`);
+      saveLogs(`TimeoutError in update defunt ${defuntId} : ${err}`);
+      return reject({
+        error: 'TimeoutError',
+        msg: `${err.message}`
+      });
+    }
+
     console.error(`Error in updateIntoDefunt: ${err}`);
     saveLogs(`Error in update defunt ${defuntId} : ${err}`)
     reject({
@@ -300,7 +313,11 @@ async function uploadFile(numeroDefunt, fileName, fileData) {
     //resolve {'message':'upload-successful'}
   } catch (err) {
     console.log(`Err 380 : ${err}`)
-    if (connection) await connection.rollback();
+    try {
+      if (connection) await connection.rollback();
+    } catch (rollbackErr) {
+      console.error(`Rollback error: ${rollbackErr}`);
+    }
     throw err;
   }
   finally {
