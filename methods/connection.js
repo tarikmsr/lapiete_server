@@ -15,7 +15,7 @@ const createConnectionWithRetry = async () => {
         database: process.env.MYSQL_DATABASE,
         waitForConnections: true,
       });
-      console.log("New connection created");
+      // console.log("New connection created");
       return connection;
     } catch (error) {
       if (error.code === 'ECONNREFUSED') {

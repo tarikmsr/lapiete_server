@@ -363,6 +363,7 @@ async function updateIntoDefunt(jsonData, defuntId) {
     }
 
     console.error(`Error in updateIntoDefunt: ${err}`);
+
     saveLogs(`Error in update defunt ${defuntId} : ${err}`)
     reject({
       error:'Error updating defunt',
