@@ -20,9 +20,6 @@ module.exports = async (req, res) => {
   const defuntId = req.url.split("?")[0].split("/")[3];
 
   const regexNumbers = /^[0-9]+$/;
-
-  console.log("24+-----put---");
-  console.log(`25+-----url---: ${req.url}`);
   try {
     if (
       !req.headers.authorization ||
@@ -47,53 +44,8 @@ module.exports = async (req, res) => {
   }
     else if (baseUrl === "/api/form/" && regexNumbers.test(id)) {
       try {
-        if(req.body != null){
-          let jsonData = await requestToJsonparser(req);
-
-          await updateIntoDefunt(jsonData,id)
-          .then(result => {
-            let jsonResult = JSON.stringify({
-                  "message": "update-successful",
-              result: result
-                });
-            res.writeHead(200, { "Content-Type": "application/json" });
-            res.end(jsonResult);
-            saveLogs(`success: update defunt : ${id} by user ${decoded.id}`);
-          })
-          .catch(err => {
-            res.writeHead(404, { "Content-Type": "application/json" });
-            res.end(
-              JSON.stringify(err)
-            );
-          });
-        }else{
-          res.writeHead(404, { "Content-Type": "application/json" });
-          res.end(
-              JSON.stringify({
-                error: "Request Json is not valid",
-              })
-          );
-        }
-
-
-      }
-      catch (err) {
-        console.log(`81 ${err}`);
-        saveLogs(`Error 82 - put - Defunt :  ${err}`);
-        res.writeHead(404, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({
-            // title: "Échec de la validation",
-            error: "L'UUID n'est pas valide",
-          }));
-      }
-    }
-    else if (baseUrl === "/api/form/" && regexNumbers.test(id)) {
-      try {
         if (req.body != null) {
           let jsonData = await requestToJsonparser(req);
-
-          console.log(`59-----url---: ${jsonData}`);
-
           await updateIntoDefunt(jsonData, id)
             .then((result) => {
               let jsonResult = JSON.stringify({
@@ -132,8 +84,10 @@ module.exports = async (req, res) => {
       try {
         upload.single("file")(req, res, async function (err) {
           if (err instanceof MulterError) {
+            saveLogs(`Error - put 132 : ${err}`);
             res.status(400).send(err.message);
           } else if (err) {
+            saveLogs(`Error - put 135 : ${err}`);
             res
               .status(500)
               .send({ error: "Internal Server Error", message: err });
@@ -150,7 +104,8 @@ module.exports = async (req, res) => {
                   fileIsNull: true,
                 });
                 res.send({ message: "delete-file-successful", result: result });
-              } else {
+              }
+              else {
                 // Create a folder for chunks if it doesn't exist
                 // Initialize the file upload tracking if it doesn't exist
                 if (!fileUploads[fileName]) {
@@ -173,8 +128,7 @@ module.exports = async (req, res) => {
                   chunkPath,
                 });
                 // Check if all chunks are received
-                if (
-                  fileUploads[fileName].receivedChunks.length === totalChunks
+                if (fileUploads[fileName].receivedChunks.length === totalChunks
                 ) {
                   // All chunks received, reassemble the file
                   const finalFilePath = path.join(
@@ -187,8 +141,9 @@ module.exports = async (req, res) => {
                     async (err) => {
                       if (err) {
                         console.error(err);
+                        saveLogs(`Error 187 - put chunk  file : ${fileName}: ${err}`)
                         return res
-                          .status(500)
+                          .status(404)
                           .send({ error: "Error reassembling file" });
                       }
 
@@ -203,7 +158,8 @@ module.exports = async (req, res) => {
                         });
                         fs.unlinkSync(finalFilePath); //test
                       } catch (error) {
-                        res.status(500).send({
+                        saveLogs(`Error 161 - put read file ${fileName}: ${error}`)
+                        res.status(400).send({
                           error: "Error processing file",
                           message: error.message,
                         });
@@ -221,7 +177,7 @@ module.exports = async (req, res) => {
                 } else {
                   res.send({
                     message: `Received chunk ${
-                      chunkIndex + 1
+                        fileUploads[fileName].receivedChunks.length
                     } of ${totalChunks}`,
                   });
                 }
@@ -233,6 +189,7 @@ module.exports = async (req, res) => {
         });
       } catch (err) {
         console.log(err);
+        saveLogs(`Error - upload-file-chunk 236 : ${err}`);
         res.writeHead(404, { "Content-Type": "application/json" });
         res.end(
           JSON.stringify({
@@ -292,8 +249,6 @@ async function updateIntoDefunt(jsonData, defuntId) {
           }
             updateQuery = updateQuery.slice(0, -2) + " WHERE numerodefunt = ?";
             values.push(defuntId);
-            console.log(`---253--id = ${tableName}`);
-
             // Handling Buffer conversion
             if (
               tableName === "generated_documents" ||
@@ -411,10 +366,10 @@ async function uploadFile(numeroDefunt, fileName, fileData) {
     connection = await pool.acquire();
     const values = [fileDataBuffer, numeroDefunt];
     await connection.execute(query, values);
-
     //resolve {'message':'upload-successful'}
   } catch (err) {
-    console.log(`Err 380 : ${err}`)
+    console.log(`Err 371 : ${err}`)
+    saveLogs(`Error 372 - put file : uploaded_documents/${fileName}: ${err}`)
     try {
       if (connection) await connection.rollback();
     } catch (rollbackErr) {
@@ -440,6 +395,7 @@ function reassembleFile(finalFilePath, chunks, callback) {
 
     writeStream.on("error", (err) => {
       // console.error('Error writing file:', err);
+      saveLogs(`Error - writeStream file put 397 : ${err}`);
       callback(err); // Callback with error
     });
 

@@ -31,7 +31,6 @@ app.use(express.urlencoded({ extended: true }));
 // app.use(cors(corsOptions));
 
 app.use((req, res) => {
-
   switch (req.method) {
     case "GET":
       getReq(req, res);

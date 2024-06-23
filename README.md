@@ -1,5 +1,7 @@
 # Nodejs RestFul CRUD API Project 
 > This is a REST API backend app gets data from Mysql DB.
+# Version: Mai 2024 
+
 
 ## Routes
 ```bash
