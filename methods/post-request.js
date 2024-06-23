@@ -57,7 +57,6 @@ async function getLastDefuntId() {
 
 
 module.exports = async (req, res) => {
-
   if(req.url === "/api/login"){
     let jsonData = await requestToJsonparser(req);
     await login(jsonData)
@@ -110,7 +109,7 @@ module.exports = async (req, res) => {
 
 
         let jsonData = await requestToJsonparser(req);
-        await insertNewDefunt(jsonData)
+        await createDefunt(jsonData)
             .then(result => {
               console.log(result)
               let jsonResult = JSON.stringify({
@@ -156,158 +155,99 @@ module.exports = async (req, res) => {
     }
   }
 
-
-
-
-
 };
 
 
-
-async function insertNewDefunt(jsonData) {
+async function createDefunt(jsonData) {
   return new Promise(async (resolve, reject) => {
     let connection;
-    let res = [];    
+    let res = [];
+
     try {
+      connection = await pool.acquire();
 
-    connection = await pool.acquire();
+      // Start a transaction
+      await connection.beginTransaction();
 
-    // Insert into parent tables
-    for (let tableName in jsonData) {
-      if (!jsonData.hasOwnProperty(tableName)) continue;
+      // Insert into the 'defunt' table
+      for (let tableName in jsonData) {
+        if (!jsonData.hasOwnProperty(tableName)) continue;
 
-      let tableData = jsonData[tableName];
+        let tableData = jsonData[tableName];
+        const tableKeys = Object.keys(tableData);
+        const primaryKey = tableKeys[0];
 
+        if (tableName === 'defunt') {
+          tableData[primaryKey] = indexId; // Assuming indexId is defined somewhere
 
-      const tableKeys = Object.keys(tableData);
-      const primaryKey = tableKeys[0];
+          let query = `INSERT INTO ${tableName} (${tableKeys.join(', ')}) VALUES (${tableKeys.map(() => '?').join(', ')})`;
+          const values = Object.values(tableData);
 
-      if (tableName === 'defunt') {
-        // Use auto-increment for the primary key in defunt tabl
-        tableData[primaryKey] = indexId; 
-
-      let query = `INSERT INTO ${tableName} (${tableKeys.join(', ')})  VALUES (`;
-      for (let i = 0; i < tableKeys.length; i++) {
-        query += "?, ";
-      }
-      query = query.slice(0, -2) + ")";
-      const values = Object.values(tableData);
-      try {
-        const [result, fields] = await connection.execute(query,values);
-        res[0] = result;
-
-        resolve(res);
-
-      }catch(err){
-        console.log(err);
-        try {
-          if (connection) await connection.rollback();
-        } catch (rollbackErr) {
-          console.error(`Rollback error: ${rollbackErr}`);
+          try {
+            const [result] = await connection.execute(query, values);
+            res.push(result);
+          } catch (err) {
+            console.error(`Error inserting into defunt table: ${err}`);
+            saveLogs(`Error inserting into defunt table: ${err}`);
+            await connection.rollback();
+            return reject({ error: 'error-insert-defunt', details: err.message });
+          }
         }
-        reject({
-          error:'error-insert-defunt',
-          // error: err['sqlMessage']
-        });
       }
-    } //end if
-  
-  }
 
-    // Insert into child tables
-    for (let tableName in jsonData) {
-      if (!jsonData.hasOwnProperty(tableName)) continue;
-      if (tableName === 'defunt') continue;
+      // Insert into child tables
+      for (let tableName in jsonData) {
+        if (!jsonData.hasOwnProperty(tableName) || tableName === 'defunt') continue;
 
-      let tableData     = jsonData[tableName];
-      if (tableName === 'decisionnaire') {
-        tableData['numeroDecisionnaire'] = indexId; //??
-      };
-      const tableKeys   = Object.keys(tableData);
-      const foreignKey  = Object.keys(tableData).find(key => key.includes('numeroDefunt'));
-      tableData[foreignKey] = indexId; //!
+        let tableData = jsonData[tableName];
+        const tableKeys = Object.keys(tableData);
 
-      let query = `INSERT INTO ${tableName} (${Object.keys(tableData).join(', ')}) VALUES (`;
-      for (let i = 0; i < tableKeys.length; i++) {
-        query += "?, ";
-      }
-      query = query.slice(0, -2) + ")";
+        if (tableName === 'decisionnaire') {
+          tableData['numeroDecisionnaire'] = indexId; // Assuming indexId is defined somewhere
+        }
 
-      const values = Object.values(tableData);
-      
-      try {
-  
-        const stmt = await connection.prepare(query);
+        const foreignKey = tableKeys.find(key => key.includes('numeroDefunt'));
+        tableData[foreignKey] = indexId; // Assuming indexId is defined somewhere
 
+        let query = `INSERT INTO ${tableName} (${tableKeys.join(', ')}) VALUES (${tableKeys.map(() => '?').join(', ')})`;
+        const values = Object.values(tableData);
+
+        // Special handling for 'generated_documents' and 'uploaded_documents' tables
         if (tableName === 'generated_documents' || tableName === 'uploaded_documents') {
-          for (let i = 1; i < values.length; i++) { // Start at index 1 to skip the first column
-            if (values[i]) { // Only set if value is not null
-              const byteValue = Buffer.from(values[i], 'base64');
-              values[i] = byteValue;
+          for (let i = 1; i < values.length; i++) {
+            if (values[i]) {
+              values[i] = Buffer.from(values[i], 'base64');
             } else {
-              // const byteValue = Buffer.from('[]', 'base64');
-              const byteValue= null;
-
-              values[i] = byteValue;
+              values[i] = null;
             }
           }
-        } 
-      const [result, fields] = await stmt.execute(values);
-
-      res[1] = result;
-      resolve(res);
-
-      }catch(err){
-        console.log(err)
-        saveLogs(err);
-        try {
-          if (connection) await connection.rollback();
-        } catch (rollbackErr) {
-          console.error(`Rollback error: ${rollbackErr}`);
         }
-        reject({
-          error:'Error-retrieving-database',
-          // error: err['sqlMessage']
-        });
-      }
-      resolve(res[1]);
-    }
 
-    connection.commit((err) => {
-      console.log("entry commit ");
-
-      if (err) {
-        return connection.rollback(() => {
-          throw err;
-        });
+        try {
+          const [result] = await connection.execute(query, values);
+          res.push(result);
+        } catch (err) {
+          console.error(`Error inserting into ${tableName} table: ${err}`);
+          saveLogs(`Error inserting into ${tableName} table: ${err}`);
+          await connection.rollback();
+          return reject({ error: 'error-insert-child-table', details: `${tableName}: ${err.message}`});
+        }
       }
+
+      // Commit the transaction
+      await connection.commit();
       resolve(res);
-      console.log('Transaction complete.');
-    });
 
-
-  } catch (err) {
-    console.log("error post 290");
-    console.log(err);
-
-    try {
-        if (connection) await connection.rollback();
-    } catch (rollbackErr) {
-        console.error(`Rollback error: ${rollbackErr}`);
+    } catch (err) {
+      console.error(`Unexpected error: ${err}`);
+      if (connection) await connection.rollback();
+      reject({ error: 'error-insert-database', details: err.message });
+    } finally {
+      if (connection) {
+        await pool.release(connection);
+      }
     }
-
-    reject({
-      error:'Error-insert-database',
-      // error: err['sqlMessage']
-    });
-  } finally {
-    if (connection) {
-      await pool.release(connection);
-    }
-  }
-
-});
-
+  });
 }
 
 

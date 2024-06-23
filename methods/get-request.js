@@ -402,7 +402,7 @@ function getFilesNameByIndex(index){
         filesName = 'pouvoir, cni_fr_dec, cni_fr_defunt, act_naissance, declaration_deces, tm_apres_mb';
         break;
       case '9'://22://Cimetiere inh
-        filesName = 'pouvoir, cni_fr_dec, certificat_deces, act_deces, fermeture_cercueil, achat_concession, demande_inhumation, bon_travaux'; //if achat_concession, bon_travaux null check achat_de_concession, bon_de_travaux in generated
+        filesName = 'pouvoir, cni_fr_dec, certificat_deces, act_deces, fermeture_cercueil, achat_concession, demande_inhumation, bon_travaux';
         break;
       case '10'://23://Deroulement inh
         filesName = 'deroulement_inh';
@@ -473,16 +473,13 @@ async function checkDownloadedFilesById(numeroDefunt, index) {
           });
         }
       } else {
-
-        // saveLogs(`Note 470 - Check-File index : ${index} incorrect`);
-
         reject({
           error: "Error-Check-File",
           message: `index : ${index} incorrect`,
         });
       }
     } catch (err) {
-      saveLogs(`Error 503 - check GeneratedFileById :  ${err}`);
+      saveLogs(`Error GET 503 - check GeneratedFileById :  ${err}`);
       console.log(err);
       try {
         if (connection) await connection.rollback();

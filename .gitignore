@@ -11,7 +11,7 @@ logs
 *.log
 
 # dotenv environment variables file
-# .env #??
+# .envProd #??
 
 # misc
 .DS_Store
