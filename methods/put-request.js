@@ -93,7 +93,7 @@ module.exports = async (req, res) => {
             saveLogs(`Error - put 132 : ${err}`);
             res.status(400).send(err.message);
           } else if (err) {
-            saveLogs(`Error - put 135 : ${err}`);
+            saveLogs(`Error - put 96 : ${err}`);
             res.status(500).send({ error: "Internal Server Error", message: err });
           } else {
 
