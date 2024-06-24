@@ -10,7 +10,7 @@ const upload = require("../util/upload");
 
 const chunksFolder = path.join(__dirname, "../util/cache/chunks"); // Folder to store chunks
 const uploadFolder = path.join(__dirname, "../util/cache/uploads"); // Folder to store final files
-
+const maxChunksExpected = 20; // Total number of chunks expected
 // Declare fileUploads object
 let fileUploads = {};
 
@@ -82,23 +82,29 @@ module.exports = async (req, res) => {
     }
     else if (baseUrl === "/api/upload-file-chunk/" && regexNumbers.test(id)) {
       try {
+        // Check if defuntId exists in the defunt table
+        const defuntExists = await checkDefuntExists(id);
+        if (!defuntExists) {
+          return res.status(404).send({ error: 'Defunt not found', message: `Defunt with ID ${id} does not exist` });
+        }
+
         upload.single("file")(req, res, async function (err) {
           if (err instanceof MulterError) {
             saveLogs(`Error - put 132 : ${err}`);
             res.status(400).send(err.message);
           } else if (err) {
             saveLogs(`Error - put 135 : ${err}`);
-            res
-              .status(500)
-              .send({ error: "Internal Server Error", message: err });
+            res.status(500).send({ error: "Internal Server Error", message: err });
           } else {
+
             if (req.file) {
-              const chunkIndex = parseInt(req.body.chunkIndex, 10);
-              const totalChunks = parseInt(req.body.totalChunks, 10); // Total number of chunks expected
+              const chunkIndex = parseInt(req.body.chunkIndex, maxChunksExpected);
+              const totalChunks = parseInt(req.body.totalChunks, maxChunksExpected);
               const fileChunk = req.file;
               const defuntId = id;
               const { fileName } = req.query;
 
+              //delete a file
               if (totalChunks === 0 && chunkIndex === 0) {
                 const result = await uploadFile(defuntId, fileName, {
                   fileIsNull: true,
@@ -107,6 +113,9 @@ module.exports = async (req, res) => {
               }
               else {
                 // Create a folder for chunks if it doesn't exist
+                if (!fs.existsSync(chunksFolder)) {
+                  fs.mkdirSync(chunksFolder, { recursive: true });
+                }
                 // Initialize the file upload tracking if it doesn't exist
                 if (!fileUploads[fileName]) {
                   fileUploads[fileName] = {
@@ -130,46 +139,67 @@ module.exports = async (req, res) => {
                 // Check if all chunks are received
                 if (fileUploads[fileName].receivedChunks.length === totalChunks
                 ) {
-                  // All chunks received, reassemble the file
+                  // All chunks received, reassemble the file in upload Folder
+                  // Create a folder for chunks if it doesn't exist
+                  if (!fs.existsSync(uploadFolder)) {
+                    fs.mkdirSync(uploadFolder, { recursive: true });
+                  }
+
                   const finalFilePath = path.join(
                     uploadFolder,
                     `${defuntId}-${fileName}`
                   );
-                  reassembleFile(
-                    finalFilePath,
-                    fileUploads[fileName].receivedChunks,
-                    async (err) => {
-                      if (err) {
-                        console.error(err);
-                        saveLogs(`Error 187 - put chunk  file : ${fileName}: ${err}`)
-                        return res
-                          .status(404)
-                          .send({ error: "Error reassembling file" });
-                      }
 
-                      try {
-                        // Once the file is reassembled, pass it to the uploadFile function
-                        const result = await uploadFile(defuntId, fileName, {
-                          path: finalFilePath,
-                        });
-                        res.send({
-                          message: "File-upload-complete",
-                          result: result,
-                        });
-                        fs.unlinkSync(finalFilePath); //test
-                      } catch (error) {
-                        saveLogs(`Error 161 - put read file ${fileName}: ${error}`)
-                        res.status(400).send({
-                          error: "Error processing file",
-                          message: error.message,
-                        });
-                      }
-                      // Respond to the client
-                      // res.send({message: 'File upload and assembly complete', filePath: finalFilePath});
+                  reassembleFile(
+                      finalFilePath,
+                      fileUploads[fileName].receivedChunks,
+                      totalChunks,
+                      async (err) => {
+                        if (err) {
+                        if (fs.existsSync(finalFilePath)) {
+                          try {
+                            fs.unlinkSync(finalFilePath); // Attempt to delete the file if it exists
+                          } catch (deleteErr) {
+                            console.error(`Error deleting file put 164: ${deleteErr}`);
+                            saveLogs(`Error deleting file put 164: ${deleteErr}`);
+                          }
+                        }
+                        return res
+                          .status(500)
+                            .send({
+                              error: "Error reassembling file",
+                              message: `${err}`,
+                              title:`${fileName}`});
+                      }else{
+                          try {
+                            // Once the file is reassembled, pass it to the uploadFile function
+                            const result = await uploadFile(defuntId, fileName, {
+                              path: finalFilePath,
+                            });
+                            res.send({
+                              message: "File-upload-complete",
+                              result: result,
+                            });
+                            fs.unlinkSync(finalFilePath); //test
+                          } catch (error) {
+                            saveLogs(`Error 175 - put read file ${fileName}: ${error}`)
+                            if (fs.existsSync(finalFilePath)) {
+                              try {
+                                fs.unlinkSync(finalFilePath); // Attempt to delete the file if it exists
+                              } catch (deleteErr) {
+                                console.error(`Error deleting file put 190: ${deleteErr}`);
+                                saveLogs(`Error deleting file put 190: ${deleteErr}`);
+                              }
+                            }
+                            // res.status(500).send({
+                            //   error: "Error processing file",
+                            //   message: error.message,
+                            // });
+                          }
+                        }
 
                       // Clean up
                       delete fileUploads[fileName]; // Remove tracking object
-                      // Any additional cleanup if needed
                     }
                   );
 
@@ -182,14 +212,15 @@ module.exports = async (req, res) => {
                   });
                 }
               }
-            } else {
+            }
+            else {
               res.status(404).send({ error: "No file uploaded." });
             }
           }
         });
       } catch (err) {
         console.log(err);
-        saveLogs(`Error - upload-file-chunk 236 : ${err}`);
+        saveLogs(`Error - upload-file-chunk 201 : ${err}`);
         res.writeHead(404, { "Content-Type": "application/json" });
         res.end(
           JSON.stringify({
@@ -368,8 +399,8 @@ async function uploadFile(numeroDefunt, fileName, fileData) {
     await connection.execute(query, values);
     //resolve {'message':'upload-successful'}
   } catch (err) {
-    console.log(`Err 371 : ${err}`)
-    saveLogs(`Error 372 - put file : uploaded_documents/${fileName}: ${err}`)
+    console.log(`Err 381 : ${err}`)
+    saveLogs(`Error 381 - put file : uploaded_documents/${fileName}: ${err}`)
     try {
       if (connection) await connection.rollback();
     } catch (rollbackErr) {
@@ -383,30 +414,101 @@ async function uploadFile(numeroDefunt, fileName, fileData) {
   }
 }
 
-function reassembleFile(finalFilePath, chunks, callback) {
+function reassembleFile(finalFilePath, chunks, totalChunks, callback) {
   try {
     chunks.sort((a, b) => a.chunkIndex - b.chunkIndex); // Ensure correct order
     const writeStream = fs.createWriteStream(finalFilePath);
 
     writeStream.on("finish", () => {
-      // console.log('File has been written');
+      // File has been successfully written
       callback(null); // No error, callback with null
     });
 
     writeStream.on("error", (err) => {
-      // console.error('Error writing file:', err);
-      saveLogs(`Error - writeStream file put 397 : ${err}`);
+      // Error writing file
+      console.log(`Error writeStream file put 411  :${err}`);
+      saveLogs(`Error writeStream file put 411 : ${err}`);
+      writeStream.end(); // Ensure writeStream is closed
       callback(err); // Callback with error
     });
+    const receivedChunks = [];
 
     for (let chunk of chunks) {
-      const chunkData = fs.readFileSync(chunk.chunkPath);
-      writeStream.write(chunkData);
-      fs.unlinkSync(chunk.chunkPath); // Delete chunk file after writing
+      try {
+        if (fs.existsSync(chunk.chunkPath)) {
+          const chunkData = fs.readFileSync(chunk.chunkPath);
+          writeStream.write(chunkData);
+          // Check if chunk file exists before attempting to delete
+          fs.unlinkSync(chunk.chunkPath); // Delete chunk file after writing
+          // Track the received chunk index
+          receivedChunks.push(chunk.chunkIndex);
+        } else {
+          console.warn(`Chunk file does not exist put 431: ${chunk.chunkPath}`);
+          saveLogs(`Chunk file does not exist put 431: ${chunk.chunkPath}`);
+        }
+      } catch (err) {
+        console.error(`Error reading or deleting chunk file: ${err}`);
+        saveLogs(`Error reading or deleting chunk file: ${err}`);
+        callback(err); // Callback with error
+        return; // Stop further processing
+      }
     }
+
+    // Check if all expected chunks have been received
+    if (receivedChunks.length === totalChunks) {
+      // All chunks received, proceed with file reassembly and upload
+    } else {
+      // Handle the case where not all chunks have been received
+      console.warn(`450 put - Incomplete upload: received ${receivedChunks.length} of ${totalChunks} chunks.`);
+      saveLogs(`450 put - Incomplete upload: received ${receivedChunks.length} of ${totalChunks} chunks.`);
+      callback(new Error(`Incomplete upload: received ${receivedChunks.length} of ${totalChunks} chunks.`));
+    }
+
+
     writeStream.end();
-  } catch (e) {
-    console.log(e);
-    callback(e); // Callback with error
+  } catch (err) {
+    console.log(`Error in reassembleFile 425 :${err}`);
+    saveLogs(`Error in reassembleFile 425: ${err}`);
+    callback(err);
   }
+}
+
+
+
+/**
+ * Checks if a defunt with the specified ID exists in the database.
+ *
+ * @param {number} defuntId - The ID of the defunt to check.
+ * @returns {Promise<boolean>} A promise that resolves to true if the defunt exists, false otherwise.
+ */
+async function checkDefuntExists(defuntId) {
+  return new Promise(async (resolve, reject) => {
+    let connection;
+    try {
+      connection = await pool.acquire();
+      if (!connection) {
+        throw new Error('Connection is null');
+      }
+
+      const query = 'SELECT COUNT(*) AS count FROM defunt WHERE numeroDefunt = ?';
+      const [results] = await connection.execute(query, [defuntId]);
+
+      if (results[0].count === 0) {
+        resolve(false);
+      } else {
+        resolve(true);
+      }
+    } catch (err) {
+      saveLogs(`CheckDefuntExists, ${err}`);
+      reject(err);
+    } finally {
+      if (connection) {
+        try {
+          await pool.release(connection);
+        } catch (releaseErr) {
+          console.error('Error releasing the connection:', releaseErr);
+        }
+      }
+    }
+  });
 }
