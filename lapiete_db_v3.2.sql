@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : 127.0.0.1
--- Généré le : lun. 24 juin 2024 à 17:51
+-- Généré le : mar. 25 juin 2024 à 01:09
 -- Version du serveur : 10.4.32-MariaDB
 -- Version de PHP : 8.0.30
 
@@ -214,8 +214,8 @@ CREATE TABLE `rapatriement` (
   `rapatriementVilleDInhumation` varchar(255) DEFAULT NULL,
   `rapatriementPaysDInhumation` varchar(255) DEFAULT NULL,
   `rapatriementAdresseDInhumation` varchar(255) DEFAULT NULL,
-  `rapatriementContactPaysInhumation` varchar(255) NOT NULL,
-  `rapatriementPhoneRespoPaysInhumation` varchar(255) NOT NULL
+  `rapatriementContactPaysInhumation` varchar(255) DEFAULT NULL,
+  `rapatriementPhoneRespoPaysInhumation` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -326,7 +326,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `name`, `first_name`, `last_name`, `email`, `email_verified_at`, `password`, `remember_token`, `created_at`, `last_login`) VALUES
-(1, 'admin', 'Hicham', 'Fen', 'admin@gmail.com', NULL, '$2a$10$HQBd3W48XL4Jo/3OJRHqKefB0P7LS54nkZYwopMnR2Z0n35B1q/62', NULL, '2023-03-17 13:58:16', '2024-06-24 02:36:01');
+(1, 'admin', 'Hicham', 'Fen', 'admin@gmail.com', NULL, '$2a$10$HQBd3W48XL4Jo/3OJRHqKefB0P7LS54nkZYwopMnR2Z0n35B1q/62', NULL, '2023-03-17 13:58:16', '2024-06-24 21:41:05');
 
 -- --------------------------------------------------------
 
