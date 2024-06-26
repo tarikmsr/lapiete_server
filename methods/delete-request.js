@@ -122,7 +122,8 @@ async function deleteDefunt(id) {
     await connection.commit();
 
     resolve(result['affectedRows']);
-  } catch (err) {
+  }
+  catch (err) {
     saveLogs(`Error in delete defunt :${err}.`);
     // Rollback the transaction in case of error
     try {
@@ -134,7 +135,8 @@ async function deleteDefunt(id) {
       error:'Error-retrieving-database',
       // error: err
     });  
-  } finally {
+  }
+  finally {
     if (connection && pool.isBorrowedResource(connection)) {
       await pool.release(connection);
     }

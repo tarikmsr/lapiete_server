@@ -242,7 +242,7 @@ module.exports = async (req, res) => {
         .send({ msg: "Token expired. Please log in again." });
     }
     return res.status(401).send({ msg: "Invalid token." });
-  } finally {}
+  }
 };
 
 /**

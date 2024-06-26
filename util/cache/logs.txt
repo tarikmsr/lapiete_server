@@ -1,5 +1,0 @@
-[2024-06-24 16:03:36] success: update defunt : 40 by user 1
-[2024-06-24 16:16:06] success: update defunt : 40 by user 1
-
-[2024-06-24 20:41:05] Success: login for user : admin@gmail.com
-[2024-06-24 20:41:22] success: update defunt : 40 by user 1
