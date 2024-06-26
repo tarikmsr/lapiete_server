@@ -76,16 +76,12 @@ module.exports = async (req, res) => {
     });
 
   }
-  else if(req.url === "/api/register"){
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ message: "not created yet", error: "Route not found" }));
-  }
-  else {
+  else{
 
-    //autres routers
+    //other routers
     try {
       //test token
-      if (
+      if(
           !req.headers.authorization ||
           !req.headers.authorization.startsWith("Bearer") ||
           !req.headers.authorization.split(" ")[1]
@@ -97,7 +93,20 @@ module.exports = async (req, res) => {
       const theToken = req.headers.authorization.split(" ")[1];
       const decoded = jwt.verify(theToken, process.env.SECRET_KEY);
 
-    if (req.url === "/api/form") {
+      if(req.url === "/api/register"){
+        let jsonData = await requestToJsonparser(req);
+        try {
+          await register(jsonData);
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ message: 'Registration successful' }));
+          saveLogs(`Success: registration for user : ${jsonData['email']}`);
+        } catch (err) {
+          console.error(err);
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: err.error, message: err.message }));
+        }
+      }
+      else if (req.url === "/api/form") {
       try {
         await getLastDefuntId()
             .then(id => {
@@ -150,8 +159,7 @@ module.exports = async (req, res) => {
         return res.status(401)
             .send({ msg: "Token expired. Please log in again." });
       }
-    }
-    finally {
+      return res.status(401).send({ msg: "Invalid token." });
     }
   }
 
@@ -312,4 +320,52 @@ async function login(jsonData) {
 
 });
 
+}
+
+async function register(jsonData) {
+  return new Promise(async (resolve, reject) => {
+    let connection;
+    try {
+      connection = await pool.acquire();
+      if (!connection) {
+        throw new Error('Connection is null');
+      }
+
+      // Check if the user already exists
+      let checkQuery = `SELECT * FROM users WHERE email = ${connection.escape(jsonData.email)};`;
+      const [checkResult, checkFields] = await connection.execute(checkQuery);
+
+      if (checkResult.length > 0) {
+        reject({
+          error: 'user-already-exists',
+          message: 'User with this email already exists.',
+        });
+      }
+
+      // Hash the password
+      const hashedPassword = await bcrypt.hash(jsonData.password, 10);
+
+      // Insert new user into the database with hashed password
+      let insertQuery = `INSERT INTO users (first_name, last_name, status, email, password, created_at) 
+                         VALUES (${connection.escape(jsonData.first_name)}, 
+                                 ${connection.escape(jsonData.last_name)}, 
+                                 ${connection.escape(jsonData.status)}, 
+                                 ${connection.escape(jsonData.email)}, 
+                                 ${connection.escape(hashedPassword)}, 
+                                 NOW())`;
+      await connection.execute(insertQuery);
+
+      resolve(); // Resolve promise on successful registration
+    } catch (err) {
+      saveLogs(`Registration, ${err}`);
+      reject({
+        error: 'database-error',
+        message: err.message || err,
+      });
+    } finally {
+      if (connection) {
+        await pool.release(connection);
+      }
+    }
+  });
 }

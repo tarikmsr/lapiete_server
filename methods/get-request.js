@@ -78,7 +78,6 @@ module.exports = async (req, res) => {
   const regexLetters = /^[a-zA-Z0-9_-\u00C0-\u017F%]+$/;
 
   try {
-    //test token
     if (
         !req.headers.authorization ||
         !req.headers.authorization.startsWith("Bearer") ||

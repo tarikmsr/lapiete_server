@@ -21,6 +21,8 @@ GET      /form/download/${defuntId}/index?${folderIndex}
 
 POST     /api/form   //insert new deunt
 POST     /api/login
+POST     /api/register  //use token , should be authentified before
+
 
 PUT      /api/form/:defuntId                  // update deunt
 PUT      /upload-file-chunk/${defuntId}      // upload file chunk

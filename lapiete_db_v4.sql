@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : 127.0.0.1
--- Généré le : mar. 25 juin 2024 à 01:09
+-- Généré le : mer. 26 juin 2024 à 19:23
 -- Version du serveur : 10.4.32-MariaDB
 -- Version de PHP : 8.0.30
 
@@ -31,7 +31,7 @@ CREATE TABLE `cimetiere` (
   `numeroDefunt` int(11) DEFAULT NULL,
   `nomDeCimetiere` varchar(255) DEFAULT NULL,
   `adresseDeCimetiere` varchar(255) DEFAULT NULL,
-  `dateDeCeremonie` date DEFAULT NULL,
+  `dateDeCeremonie` datetime DEFAULT NULL,
   `heureDeCeremonie` varchar(255) DEFAULT NULL,
   `codePostalDeCimetiere` int(255) DEFAULT NULL,
   `villeDeCimetiere` varchar(255) DEFAULT NULL
@@ -51,7 +51,7 @@ CREATE TABLE `concession` (
   `prenomDeConcessionaire` varchar(255) DEFAULT NULL,
   `adresseDeConcessionaire` varchar(255) DEFAULT NULL,
   `lienDeParenteDeConcessionaire` varchar(255) DEFAULT NULL,
-  `dateAchatDeConcession` date DEFAULT NULL,
+  `dateAchatDeConcession` datetime DEFAULT NULL,
   `dureeDeConcession` varchar(255) DEFAULT NULL,
   `numeroDeConcession` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -64,8 +64,8 @@ CREATE TABLE `concession` (
 
 CREATE TABLE `deces` (
   `numeroDefunt` int(11) DEFAULT NULL,
-  `decesDate` date DEFAULT NULL,
-  `decesDateDeclaration` date DEFAULT NULL,
+  `decesDate` datetime DEFAULT NULL,
+  `decesDateDeclaration` datetime DEFAULT NULL,
   `decesHeure` varchar(255) DEFAULT NULL,
   `decesLieu` varchar(255) DEFAULT NULL,
   `decesNomEtablissement` varchar(255) DEFAULT NULL,
@@ -90,7 +90,7 @@ CREATE TABLE `decisionnaire` (
   `decisionnaireNom` varchar(255) DEFAULT NULL,
   `decisionnairePrenom` varchar(255) DEFAULT NULL,
   `decisionnaireNomJeuneFille` varchar(255) DEFAULT NULL,
-  `decisionnaireDateNaissance` date DEFAULT NULL,
+  `decisionnaireDateNaissance` datetime DEFAULT NULL,
   `decisionnaireLieuNaissance` varchar(255) DEFAULT NULL,
   `decisionnaireAdresse` varchar(255) DEFAULT NULL,
   `decisionnaireCodePostal` int(11) DEFAULT NULL,
@@ -113,7 +113,7 @@ CREATE TABLE `defunt` (
   `defuntNom` varchar(255) DEFAULT NULL,
   `defuntPrenom` varchar(255) DEFAULT NULL,
   `defuntNomJeuneFille` varchar(255) DEFAULT NULL,
-  `defuntDateDeNaissance` date DEFAULT NULL,
+  `defuntDateDeNaissance` datetime DEFAULT NULL,
   `defuntLieuDeNaissance` varchar(255) DEFAULT NULL,
   `defuntAdresse` varchar(255) DEFAULT NULL,
   `defuntCodePostal` int(255) DEFAULT NULL,
@@ -180,12 +180,12 @@ CREATE TABLE `generated_documents` (
 CREATE TABLE `mise_en_biere` (
   `numeroDefunt` int(11) DEFAULT NULL,
   `miseEnBiereLieu` varchar(255) DEFAULT NULL,
-  `miseEnBiereDate` date DEFAULT NULL,
+  `miseEnBiereDate` datetime DEFAULT NULL,
   `miseEnBiereHeure` varchar(255) DEFAULT NULL,
-  `miseEnBiereToiletteDate` date DEFAULT NULL,
+  `miseEnBiereToiletteDate` datetime DEFAULT NULL,
   `miseEnBiereToiletteLieu` varchar(255) DEFAULT NULL,
   `miseEnBiereToiletteHeure` varchar(255) DEFAULT NULL,
-  `miseEnBiereLeveeDate` date DEFAULT NULL,
+  `miseEnBiereLeveeDate` datetime DEFAULT NULL,
   `miseEnBiereLeveeHeure` varchar(255) DEFAULT NULL,
   `miseEnBiereDestination` varchar(255) DEFAULT NULL,
   `miseEnBierePassageLieuCulte` tinyint(1) DEFAULT 1,
@@ -193,7 +193,7 @@ CREATE TABLE `mise_en_biere` (
   `miseEnBiereLieuCulteAdresse` varchar(255) DEFAULT NULL,
   `miseEnBierePriereHeure` varchar(255) DEFAULT NULL,
   `miseEnBiereAutorisationDe` varchar(255) DEFAULT NULL,
-  `miseEnBiereDateAutorisationFerme` date DEFAULT NULL,
+  `miseEnBiereDateAutorisationFerme` datetime DEFAULT NULL,
   `isMembreisDec` tinyint(1) DEFAULT NULL,
   `miseEnBierePresenceMembreFamille` tinyint(1) DEFAULT NULL,
   `miseEnBiereMembreFamilleCivilite` varchar(50) DEFAULT NULL,
@@ -249,7 +249,7 @@ CREATE TABLE `societe` (
   `societeStatut` varchar(255) DEFAULT NULL,
   `societeCapital` int(11) DEFAULT NULL,
   `societeNumeroHabilitation` varchar(255) DEFAULT NULL,
-  `societeDateFinHabilitation` date NOT NULL,
+  `societeDateFinHabilitation` datetime DEFAULT NULL,
   `societeTelephoneFixe` varchar(255) DEFAULT NULL,
   `societeTelephonePortable` varchar(255) DEFAULT NULL,
   `societeFax` varchar(255) DEFAULT NULL,
@@ -268,7 +268,7 @@ CREATE TABLE `societe` (
 --
 
 INSERT INTO `societe` (`id`, `societeNumeroPF`, `societeNomPF`, `societeAdresse`, `societeCodePostal`, `societeVille`, `societeStatut`, `societeCapital`, `societeNumeroHabilitation`, `societeDateFinHabilitation`, `societeTelephoneFixe`, `societeTelephonePortable`, `societeFax`, `societeEmail`, `societeSite`, `societeRCS`, `societeSIRET`, `societeTVA`, `societeAPE`, `societeLogo`, `societeTampon`) VALUES
-(1, NULL, 'POMPES FUNÈBRES LA PIÉTÉ', '17, Rue de la Santé', '75013', 'PARIS', 'SASU', 10000, '20-75-0507', '2025-10-30', '06 65 22 22 20', '06 65 22 87 25\r\n', '09 81 40 89 51', 'contact@lapiete.com', 'www.lapiete.com', 'RCS PARIS', 'SIRET 889 423 745 000 13', 'TVA FR 00 889 423 745', 'APE 9603Z', NULL, NULL);
+(1, NULL, 'POMPES FUNÈBRES LA PIÉTÉ', '17, Rue de la Santé', '75013', 'PARIS', 'SASU', 10000, '20-75-0507', '2025-10-30 00:00:00', '06 65 22 22 20', '06 65 22 87 25\r\n', '09 81 40 89 51', 'contact@lapiete.com', 'www.lapiete.com', 'RCS PARIS', 'SIRET 889 423 745 000 13', 'TVA FR 00 889 423 745', 'APE 9603Z', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -279,7 +279,7 @@ INSERT INTO `societe` (`id`, `societeNumeroPF`, `societeNomPF`, `societeAdresse`
 CREATE TABLE `uploaded_documents` (
   `numeroDefunt` int(11) DEFAULT NULL,
   `cni_origin_defunt` mediumblob DEFAULT NULL,
-  `cni_fr_defunt` blob DEFAULT NULL,
+  `cni_fr_defunt` mediumblob DEFAULT NULL,
   `act_naissance` mediumblob DEFAULT NULL,
   `cni_origin_dec` mediumblob DEFAULT NULL,
   `cni_fr_dec` mediumblob DEFAULT NULL,
@@ -310,14 +310,13 @@ CREATE TABLE `uploaded_documents` (
 
 CREATE TABLE `users` (
   `id` int(11) NOT NULL,
-  `name` varchar(255) NOT NULL,
   `first_name` varchar(255) DEFAULT NULL,
   `last_name` varchar(255) DEFAULT NULL,
+  `status` varchar(255) DEFAULT NULL,
   `email` varchar(255) NOT NULL,
-  `email_verified_at` timestamp NULL DEFAULT NULL,
   `password` varchar(255) NOT NULL,
   `remember_token` varchar(100) DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
+  `created_at` datetime DEFAULT NULL,
   `last_login` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -325,8 +324,8 @@ CREATE TABLE `users` (
 -- Déchargement des données de la table `users`
 --
 
-INSERT INTO `users` (`id`, `name`, `first_name`, `last_name`, `email`, `email_verified_at`, `password`, `remember_token`, `created_at`, `last_login`) VALUES
-(1, 'admin', 'Hicham', 'Fen', 'admin@gmail.com', NULL, '$2a$10$HQBd3W48XL4Jo/3OJRHqKefB0P7LS54nkZYwopMnR2Z0n35B1q/62', NULL, '2023-03-17 13:58:16', '2024-06-24 21:41:05');
+INSERT INTO `users` (`id`, `first_name`, `last_name`, `status`, `email`, `password`, `remember_token`, `created_at`, `last_login`) VALUES
+(1, 'Hicham', 'Fen', 'admin', 'hicham@lapiete.com', '$2a$10$c8B24EMHrmGSAT9yrQC/FOEMeZswxzOWjwqhM6gH/tmsGMxCCrdqy', NULL, '2024-06-26 18:21:09', '2024-06-26 18:22:26');
 
 -- --------------------------------------------------------
 
@@ -338,9 +337,9 @@ CREATE TABLE `vol` (
   `numeroDefunt` int(11) DEFAULT NULL,
   `volNumeroLTA` varchar(255) DEFAULT NULL,
   `numeroDeVol` varchar(255) DEFAULT NULL,
-  `volDateDepot` date DEFAULT NULL,
-  `volDateDepart` date DEFAULT NULL,
-  `volDateArrivee` date DEFAULT NULL,
+  `volDateDepot` datetime DEFAULT NULL,
+  `volDateDepart` datetime DEFAULT NULL,
+  `volDateArrivee` datetime DEFAULT NULL,
   `volCompagnieAerienne` varchar(255) DEFAULT NULL,
   `aeroportDeDepart` varchar(255) DEFAULT NULL,
   `aeroportDArrivee` varchar(255) DEFAULT NULL,
@@ -459,7 +458,7 @@ ALTER TABLE `societe`
 -- AUTO_INCREMENT pour la table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- Contraintes pour les tables déchargées
