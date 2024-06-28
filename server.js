@@ -1,6 +1,6 @@
 const getReq = require("./methods/get-request");
 const postReq = require("./methods/post-request");
-const putReq = require("./methods/put-request");
+const {putReq} = require("./methods/put-request");
 const deleteReq = require("./methods/delete-request");
 
 require('dotenv').config();
@@ -17,8 +17,7 @@ app.use(cors({
 
 app.use(express.urlencoded({ extended: true }));
 
-
-// const whitelist = ['https://www.lapiete.com/', 'https://lapiete3.000webhostapp.com'];
+// const whitelist = ['https://www.admin.lapiete.com/', 'https://www.lapiete.com/'];
 // const corsOptions = {
 //   origin: (origin, callback) => {
 //     if (whitelist.indexOf(origin) !== -1) {

@@ -1,0 +1,6 @@
+[2024-06-28 16:10:58] Success: login for user : hicham@lapiete.com
+[2024-06-28 16:11:18] success: update defunt : 1 by user 1
+[2024-06-28 17:15:39] Success: login for user : hicham@lapiete.com
+[2024-06-28 17:15:56] success: update defunt : 1 by user 1
+[2024-06-28 17:16:18] success: update defunt : 1 by user 1
+[2024-06-28 17:19:52] success: update defunt : 1 by user 1
