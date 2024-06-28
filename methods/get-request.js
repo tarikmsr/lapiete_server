@@ -109,7 +109,6 @@ module.exports = async (req, res) => {
           });
     }
     else if (req.url === "/api/form") {
-
       await getAllDefuntsData()
           .then(data => {
             let jsonResult = JSON.stringify(data);
@@ -201,7 +200,6 @@ module.exports = async (req, res) => {
       await getGeneratedFolderFileById(defuntId, index, decoded.id)
           .then(async (filePDFPath) => {
 
-            console.log(`------205 --filePDFPath: ${filePDFPath}`);
             const fileName = filePDFPath.split("/").pop();
             const fileStream = fs.createReadStream(filePDFPath.toString());
             const stat = fs.statSync(filePDFPath);
@@ -221,8 +219,6 @@ module.exports = async (req, res) => {
             saveLogs(`user:${decoded.id} generate folder:${index} for defunt :${defuntId}.`);
           })
           .catch((err) => {
-            console.log(`err 255 get folder`);
-            console.log(err);
             saveLogs(`Error get download folder ${index} - defunt ${defuntId} : ${err}`)
             res.writeHead(404, { "Content-Type": "application/json" });
             res.end(JSON.stringify(err));
@@ -467,13 +463,13 @@ async function checkDownloadedFilesById(numeroDefunt, index) {
           });
         } else {
           reject({
-            error: "Error-Check-File",
+            error: "defunt-without-files",
             message: `defunt with id : ${numeroDefunt} has no file uploded`,
           });
         }
       } else {
         reject({
-          error: "Error-Check-File",
+          error: "index-file-incorrect",
           message: `index : ${index} incorrect`,
         });
       }
@@ -482,7 +478,8 @@ async function checkDownloadedFilesById(numeroDefunt, index) {
       console.log(err);
       try {
         if (connection) await connection.rollback();
-      } catch (rollbackErr) {
+      }
+      catch (rollbackErr) {
         console.error(`Rollback error: ${rollbackErr}`);
       }
       reject({
@@ -665,9 +662,8 @@ async function getOneDefuntDataById(numeroDefunt){
         jsonData = {};
       }
       resolve(jsonData);
-
     } catch (err) {
-      saveLogs(`Error 646 - getOneDefuntDataById : ${err}`);
+      saveLogs(`Error 666 - getOneDefuntDataById : ${err}`);
       console.log(err);
       reject({
         error:'Error-retrieving-database',

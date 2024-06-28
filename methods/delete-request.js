@@ -1,22 +1,26 @@
 const { pool } = require('../methods/connection');
 const jwt = require("jsonwebtoken");
 const saveLogs = require('../util/logger');
+const { checkDefuntExists } = require('../methods/put-request');
+const url = require('url');
 
 const childTableNames = ['decisionnaire', 'filiation', 'deces', 'mise_en_biere', 'situation_familiale', 
 'cimetiere', 'concession', 'rapatriement', 'vol', 
 'generated_documents','uploaded_documents'];
 
-module.exports = (req, res) => {
-  let baseUrl = req.url.substring(0, req.url.lastIndexOf("/") + 1);
-  let id = req.url.split("/")[3];
+
+module.exports = async (req, res) => {
+  const parsedUrl = url.parse(req.url, true); // Parse the URL with query string
+  const baseUrl = parsedUrl.pathname.substring(0, parsedUrl.pathname.lastIndexOf("/") + 1);
+  const id = parsedUrl.pathname.split("/")[3]; // Extract the id from the URL path
   const regexNumbers = /^[0-9]+$/;
 
-  try{
-    if(
+  try {
+    if (
         !req.headers.authorization ||
         !req.headers.authorization.startsWith('Bearer') ||
         !req.headers.authorization.split(' ')[1]
-    ){
+    ) {
       return res.status(422).json({
         message: "Please provide the token",
       });
@@ -24,71 +28,95 @@ module.exports = (req, res) => {
     const theToken = req.headers.authorization.split(' ')[1];
     const decoded = jwt.verify(theToken, process.env.SECRET_KEY)
 
-  if (!regexNumbers.test(id)) {
-    res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(
-      JSON.stringify({
-        message: "Validation Failed",
-        error: "UUID is not valid",
-      })
-    );  
-  }
-  else if (baseUrl === "/api/form/" && regexNumbers.test(id)) {
-
-    try {
-    deleteDefunt(id)
-    .then(result => {
-      res.writeHead(200, { "Content-Type": "application/json" });
-      let jsonResult = JSON.stringify({
-        "message": result > 0 ? "Supprission du defunt avec succès" :  "defunt with id doesn't exist",
-      });
-      res.end(jsonResult);
-      saveLogs(`user:${decoded.id} deleted defunt :${id}.`);
-    })
-        .catch(err => {
-          res.writeHead(404, { "Content-Type": "application/json" });
-          res.end(
-              JSON.stringify({
-                error: "échec de la suppression du defunt",
-                // error: err.error['message'],
-              })
-          );
-    })
-    .catch(err => {
-      res.writeHead(404, { "Content-Type": "application/json" });
+    if (!regexNumbers.test(id)) {
+      res.writeHead(404, {"Content-Type": "application/json"});
       res.end(
-        JSON.stringify({
-          error: "échec de la suppression du defunt",
-          // error: err.error['message'],
-        })
+          JSON.stringify({
+            message: "Validation Failed",
+            error: "UUID is not valid",
+          })
       );
-    });
+    }
+    else if (baseUrl === "/api/form/" && regexNumbers.test(id)) {
+
+      try {
+        deleteDefunt(id)
+            .then(result => {
+              res.writeHead(200, {"Content-Type": "application/json"});
+              let jsonResult = JSON.stringify({
+                "message": result > 0 ? "Supprission du defunt avec succès" : "defunt with id doesn't exist",
+              });
+              res.end(jsonResult);
+              saveLogs(`user:${decoded.id} deleted defunt :${id}.`);
+            })
+            .catch(err => {
+              res.writeHead(404, {"Content-Type": "application/json"});
+              res.end(
+                  JSON.stringify({
+                    error: "échec de la suppression du defunt",
+                    // error: err.error['message'],
+                  })
+              );
+            })
+            .catch(err => {
+              res.writeHead(404, {"Content-Type": "application/json"});
+              res.end(
+                  JSON.stringify({
+                    error: "échec de la suppression du defunt",
+                    // error: err.error['message'],
+                  })
+              );
+            });
+      } catch (err) {
+        res.writeHead(404, {"Content-Type": "application/json"});
+        res.end(
+            JSON.stringify({
+              error: "échec de la suppression",
+              // message: `${err.text}`,
+            })
+        );
+      }
+
+    } else if (baseUrl === "/api/delete-file/" && regexNumbers.test(id)) {
+      try {
+        // Check if defuntId exists in the defunt table
+        const defuntExists = await checkDefuntExists(id);
+        if (!defuntExists) {
+          return res.status(404).send({error: 'Defunt not found', message: `Defunt with ID ${id} does not exist`});
+        }
+
+        // Check if fileName is provided
+        const defuntId = id;
+        const {fileName} = req.query;
+
+        if (!fileName) {
+          return res.status(400).send({
+            error: 'Missing fileName parameter',
+            message: 'Please provide the fileName parameter'
+          });
+        }
+
+        // Call your delete file function here
+        const result = await deleteFile(defuntId, fileName);
+        return res.send({message: "delete-file-successful", result: result});
+
+      } catch (err) {
+        saveLogs(`Error - delete-file API: ${err}`);
+        return res.status(500).send({error: "Internal Server Error", message: err.message});
+      }
+    } else {
+      res.writeHead(404, {"Content-Type": "application/json"});
+      res.end(JSON.stringify({message: "Not Found", error: "Route not found"}));
+    }
+
   } catch (err) {
-    res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(
-      JSON.stringify({
-        error: "échec de la suppression",
-        // message: `${err.text}`,
-      })
-    );
-  }
-
-  }
-  else {
-    res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ message: "Not Found", error: "Route not found" }));
-  }
-
-  }
-  catch (err) {
     if (err instanceof jwt.TokenExpiredError) {
       return res.status(401)
-          .send({ msg: "Token expired. Please log in again." });
+          .send({msg: "Token expired. Please log in again."});
     }
     //handle other errors
-    return res.status(401).send({ msg: 'Invalid token.' });
-  }
-  finally {
+    return res.status(401).send({msg: 'Invalid token.'});
+  } finally {
   }
 
 };
@@ -143,4 +171,36 @@ async function deleteDefunt(id) {
   }
 });
 
+}
+
+
+/**
+ * Deletes a file reference for a specific 'defunt' from the database.
+ *
+ * @param {number} numeroDefunt - The ID of the defunt.
+ * @param {string} fileName - The name of the file field to delete.
+ * @returns {Promise<string>} A promise that resolves when the file reference is successfully deleted.
+ */
+async function deleteFile(numeroDefunt, fileName) {
+  let connection = null;
+  try {
+    // Delete file reference from the database
+    const query = `UPDATE uploaded_documents SET ${fileName} = NULL WHERE numeroDefunt = ?`;
+
+    connection = await pool.acquire();
+    await connection.execute(query, [numeroDefunt]);
+    return 'delete-file-successful';
+  } catch (err) {
+    saveLogs(`Error - delete File From DB function: ${err}`);
+    try {
+      if (connection) await connection.rollback();
+    } catch (rollbackErr) {
+      console.error(`Rollback error: ${rollbackErr}`);
+    }
+    throw err;
+  } finally {
+    if (connection && pool.isBorrowedResource(connection)) {
+      await pool.release(connection);
+    }
+  }
 }
